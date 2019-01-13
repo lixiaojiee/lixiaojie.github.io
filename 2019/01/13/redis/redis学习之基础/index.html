@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans" prefix="og: http://ogp.me/ns#" class="han-init">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="icon" href="/favicon.ico">
+  
+  <title>李晓杰的个人博客</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox-1.3.4.css">
+  <!--在这里倒入jquery 方便处理部分页面的jquery-->
+  <script src="https://cdn.staticfile.org/jquery/1.7/jquery.min.js" type="text/javascript"></script>
+</head></html>
+
+<body>
+	<header class="site-header navfixed-false">
+  <div class="container">
+      <h1><a href="/" title="李晓杰的个人博客"><span class="octicon octicon-mark-github"></span> 李晓杰的个人博客</a></h1>
+      <nav class="site-header-nav" role="navigation">
+        
+              
+              <a href="/" class=" site-header-nav-item hvr-underline-from-center" title="主页">主页</a>
+        
+              
+              <a href="/categories/" class=" site-header-nav-item hvr-underline-from-center" title="分类">分类</a>
+        
+              
+              <a href="/message/" class=" site-header-nav-item hvr-underline-from-center" title="留言">留言</a>
+        
+      </nav>
+  </div>
+</header>
+
+	
+<section class="collection-head geopattern" data-pattern-id="">
+    <div class="container">
+        <div class="collection-title">
+            <h1 class="collection-header">
+                
+            </h1>
+            
+                <div class="collection-info">
+                    <span class="meta-info">
+                        <span class="octicon octicon-calendar"></span>
+                        <time datetime="2019-01-13T11:02:13.140Z" itemprop="datePublished">2019-01-13</time>
+                    </span>
+                    
+                </div>
+            
+        </div>
+    </div>
+</section>
+	<section class="container">
+    <div class="columns">
+        <div class="column  three-fourths ">
+            <article class="article-content markdown-body">
+                <h1 id="一、redis启动命令"><a href="#一、redis启动命令" class="headerlink" title="一、redis启动命令"></a>一、redis启动命令</h1><p>启动redis的三种方法：</p>
+<p>1）默认配置：redis-server（生产环境不建议使用）</p>
+<p>2）运行启动：redis-server加上要修改的配置名和值（可以是多对），没有设置的配置将使用默认配置。虽然运行配置可以自定义配置，但是如果需要修改的配置较多或者希望将配置保存到文件里，不建议使用这种配置</p>
+<p>3）配置文件启动：将要修改的配置写到文件里，这样我们就可以按照下边方式启动</p>
+<pre><code># redis-server /opt/redis/redis.conf
+</code></pre><p>redis-cli可以使用两种方式连接redis服务器：</p>
+<p>1）交互方式：</p>
+<pre><code># redis-cli -h {host} -p {port} {command}
+</code></pre><p>2)命令方式：</p>
+<pre><code># redis-cli -h ip {host} -p {port} {command}
+</code></pre><p>第二种需要注意的是，如果没有-h参数，那么默认连接127.0.0.1；如果没有-p，那么默认端口就是6379.</p>
+<h1 id="二、redis-api的使用"><a href="#二、redis-api的使用" class="headerlink" title="二、redis api的使用"></a>二、redis api的使用</h1><h2 id="1、redis的一些全局命令"><a href="#1、redis的一些全局命令" class="headerlink" title="1、redis的一些全局命令"></a>1、redis的一些全局命令</h2><p>1）查看所有的键</p>
+<pre><code>keys *
+</code></pre><p>keys命令会遍历所有的键，所以它的时间复杂度为<em>O</em>(n)，因此，<u>当redis保存大量键时，线上禁止使用</u></p>
+<p>2）键总数</p>
+<pre><code>dbsize
+</code></pre><p>键总数会返回当前数据库中键的总数</p>
+<p>dbsize命令在计算键总数时不会遍历所有的键，而是直接获取redis内置的键总数变量，所以dbsize命令的时间复杂度为<em>O</em>(1)</p>
+<p>3）检查键是否存在</p>
+<pre><code>exists key
+</code></pre><p>存在返回1，不存在返回0</p>
+<p>4）删除键</p>
+<pre><code>del key [key1 ...]
+</code></pre><p>成功了就返回删除成功的个数，不存在返回0</p>
+<p>5）键过期</p>
+<pre><code>expire key seconds
+</code></pre><p>超时时间单位为秒</p>
+<p>可以用ttl命令查看键的剩余过期时间</p>
+<pre><code>ttl key
+</code></pre><p>它有三种返回值：</p>
+<p>a、大于等于零的整数，键剩余的过期时间</p>
+<p>b、-1：键没设置过期时间</p>
+<p>c、-2:键不存在</p>
+<p>6）键的数据结构类型</p>
+<pre><code>type key
+</code></pre><p>如果键不存在，则返回none</p>
+<h2 id="2、redis数据结构的内部编码"><a href="#2、redis数据结构的内部编码" class="headerlink" title="2、redis数据结构的内部编码"></a>2、redis数据结构的内部编码</h2><p>redis的数据结构包括string、hash、list、set、zset等，这些都是redis对外的数据结构，实际上每种数据结构都有其底层的内部编码实现。这种内部编码实现有两个好处：</p>
+<p>1）可以改进内部编码，而对外的数据结构和命令没有影响</p>
+<p>2）多种内部编码实现可以在不同场景下发挥各自的优势</p>
+<h2 id="3、redis的单线程处理机制"><a href="#3、redis的单线程处理机制" class="headerlink" title="3、redis的单线程处理机制"></a>3、redis的单线程处理机制</h2><p>一条命令从客户端到服务端，不会被立即执行，而是都要进一个队列里，然后才会逐个执行</p>
+<p>redis即使在单线程下，其执行速度仍然快，归结于以下几点：</p>
+<p>1）纯内存访问，redis将所有的数据放在内存内，而内存的响应时长大约为100ns，这是redis达到每秒万级访问的重要基础</p>
+<p>2）非阻塞io，redis使用epoll作为I/O多路复用技术的实现，再加上redis自身的事件处理模型将epoll中的连接、读写、关闭都转换为事件，不在网络I/O上浪费过多的时间</p>
+<p>3）单线程避免了线程切换和静态产生的消耗</p>
+<p>单线程也是有缺点的，如果某个命令的执行时间过长，会造成其他命令的阻塞，这对于redis这种高性能的服务来说是致命的，所以<u>redis是面向快速执行场景的数据库</u></p>
+<h2 id="4、字符串"><a href="#4、字符串" class="headerlink" title="4、字符串"></a>4、字符串</h2><p>字符串可以存储字符串、数字、甚至是二进制，但最大不得超过512MB</p>
+<p>常用命令：</p>
+<p>1）设置值</p>
+<pre><code>set key value [ex seconds] [px milliseconds] [nx|xx]
+</code></pre><p>ex seconds：为键设置秒级过期时间</p>
+<p>px milliseconds：为键设置毫秒级过期时间</p>
+<p>nx：键必须不存在，才可以设置成功，用于添加</p>
+<p>xx：键必须存在，才可以设置成功，用于更新</p>
+<p>也有专门支持nx的命令setnx，其中setnx可以用来实现分布式锁</p>
+<p>2）获取值</p>
+<pre><code>get key
+</code></pre><p>如果键不存在，则返回nil</p>
+<p>3）批量设置值</p>
+<pre><code>mset key value [key1 value1 ...]
+</code></pre><p>4)批量获取值</p>
+<pre><code>mget key [key1 ...]
+</code></pre><p>如果分别通过get获取n个键的值，则其消费的时间就是<code>n次get时间=n次网络时间+n次命令时间</code></p>
+<p>如果通过mget获取n个键的值，则其消费的时间就是<code>n次get时间=1次网络时间+n次命令时间</code></p>
+<p>5）计数</p>
+<pre><code>incr key
+</code></pre><p>incr用于对值进行自增操作，返回结果有三种情况</p>
+<p>a、值不是整数，返回错误</p>
+<p>b、值是整数，返回自增后的结果</p>
+<p>c、键不存在，返回值为0自增，返回的结果为1</p>
+<p>redis的内部技术实现时使用了CAS，CAS对cpu的开销在redis不存在，因为redis是单线程的</p>
+<p>6）追加值</p>
+<pre><code>append key value
+</code></pre><p>向字符串的末尾追加值</p>
+<p>7）字符串长度</p>
+<pre><code>strlen key
+</code></pre><p>字符串的内部编码：</p>
+<p>a、int：8个字节的长整型</p>
+<p>b、embstr：小于等于39个字节的字符串</p>
+<p>c、raw，大于39个字节的字符串</p>
+<p>字符串的典型使用场景：</p>
+<p>a）缓存功能</p>
+<p>b）计数</p>
+<p>c）共享Session（需要保证redis是高可用和可扩展的）</p>
+<p>d）限速，如用户输入手机验证码，一分钟内输入多少次就不让输入，网站对ip的访问限制也是该道理</p>
+<h2 id="5、哈希"><a href="#5、哈希" class="headerlink" title="5、哈希"></a>5、哈希</h2><p>哈希类型指键值本身又是一个键值对结构</p>
+<p>常用命令：<br>1）设置值</p>
+<pre><code>hset key field value
+</code></pre><p>设置成功返回1，反之返回0，redis提供了hsetnx命令，作用同setnx，只是其作用域从key变为field</p>
+<p>2）获取值</p>
+<pre><code>hget key field
+</code></pre><p>3）删除field</p>
+<pre><code>hdel key field [field1 ...]
+</code></pre><p>删除成功后会返回删除的个数</p>
+<p>4）计算field个数</p>
+<pre><code>hlen key
+</code></pre><p>5）批量设置或获取field-value</p>
+<pre><code>hmget key field [field1 ...]
+hmset key field value [field1 value1 ...]
+</code></pre><p>6)判断field是否存在</p>
+<pre><code>hexists key field
+</code></pre><p>存在返回1，否则返回0</p>
+<p>7）获取所有的field</p>
+<pre><code>hkeys key
+</code></pre><p>8）获取所有的value</p>
+<pre><code>hvals key
+</code></pre><p>9）获取所有的field-value</p>
+<pre><code>hgetall key
+</code></pre><p>内部编码：</p>
+<p>a、ziplist（压缩列表）：</p>
+<p>​    sum(field)&lt;hash-max-ziplist-entries(默认512个)&amp;&amp;value&lt;hash-max-ziplist-value(默认64字节)</p>
+<p>zip使用更加紧凑的结构实现多个元素的连续存储，所以在节省内存方面比hashtable优秀很多</p>
+<p>b、hashtable（哈希表）：</p>
+<p>当不满足a条件时，会采用hashtable编码，因为此时ziplist的读写效率会下降，而hashtable的读写时间复杂度为<em>O</em>(1)</p>
+<p>使用场景：</p>
+<p>可以存储一个用户的个人信息</p>
+<h2 id="6、列表"><a href="#6、列表" class="headerlink" title="6、列表"></a>6、列表</h2><p>列表类型是用来存储多个有序字符串，列表中的每个字符串称为元素。一个列表中最多可以存储2^32^-1个元素</p>
+<p>列表的特点：</p>
+<p>a、列表中的元素都是有序的</p>
+<p>b、列表中的元素是<strong>可以重复</strong>的</p>
+<p>常用命令：</p>
+<p>1）添加操作</p>
+<p>a、从右边插入元素</p>
+<pre><code>rpush key value [value1 ...]
+</code></pre><p>b、从左边插入元素</p>
+<pre><code>lpush key value [value1 ...]
+</code></pre><p>c、向某个元素前或后插入元素</p>
+<pre><code>linsert key before|after pivot value
+</code></pre><p>linsert命令会从列表中找到等于pivot的元素，在其前或者后插入一个新的元素value</p>
+<p>2）查找</p>
+<p>a、获取指定范围内的元素列表</p>
+<pre><code>lrange key start end
+</code></pre><p>list的索引下标有两个特点：</p>
+<p>i、索引下标从左到右分别是0到N-1，从右到左分别是-1到-N</p>
+<p>ii、<strong>lrange中end选项包含了自身</strong></p>
+<p>b、获取列表指定索引下标的元素</p>
+<pre><code>lindex key index
+</code></pre><p>c、获取列表长度</p>
+<pre><code>llen key
+</code></pre><p>3）删除</p>
+<p>a、从列表左侧弹出元素</p>
+<pre><code>lpop key
+</code></pre><p>b、从列表右侧弹出</p>
+<pre><code>rpop key
+</code></pre><p>c、删除指定元素</p>
+<pre><code>lrem key count value
+</code></pre><p>lrem命令会从列表中找到等于value的元素进行删除，根据count的不同分为三种情况：</p>
+<p>i、count&gt;0:从左到右，删除至多count个元素</p>
+<p>ii、count&lt;0：从右到左，删除最多count绝对值个元素</p>
+<p>iii、count=0:删除所有</p>
+<p>d、按照指定范围修剪列表</p>
+<pre><code>ltrim key start end
+</code></pre><p>4）修改</p>
+<p>a、修改指定索引下标的元素</p>
+<pre><code>lset key index nowValue
+</code></pre><p>5）阻塞操作</p>
+<p>阻塞式弹出如下：</p>
+<pre><code>blpop key [key1 ...] timeout
+brpop key [key1 ...] timeout
+</code></pre><p>该操作可能有以下几种情况：</p>
+<p>i、列表为空：如果timeout = 3，那么客户端要等到3s后返回，如果timeout=0，那么客户端会一直阻塞等下去，如果在阻塞期间添加了key，客户端立即返回</p>
+<p>ii、列表不为空，客户端立即返回</p>
+<p>在使用brpop时，有两点需要注意：</p>
+<p>i、如果是多个键，那么brpop会从左至右遍历键，一旦有一个键能弹出元素，客户端将立即返回</p>
+<p>ii、如果多个客户端对同一个键执行brpop，那么最先执行brpop命令的客户端客户获取到弹出的值</p>
+<p>内部编码：</p>
+<p>a、ziplist（压缩列表）</p>
+<p>​        sum(field)&lt;list-max-ziplist-entries(默认512个)&amp;&amp;value&lt;list-max-ziplist-value(默认64字节)</p>
+<p>b、linkedlist（链表）</p>
+<p>使用场景：</p>
+<p>a、消息队列</p>
+<p>可以使用lpush+brpop实现阻塞队列</p>
+<p>b、文章列表</p>
+<h2 id="7、集合"><a href="#7、集合" class="headerlink" title="7、集合"></a>7、集合</h2><p>集合类型也是用来保存多个字符串元素，但和列表类型不一样的是，集合中不允许有重复元素，并且集合中的元素是无序的，不能通过索引下标获取元素。一个集合最多可以存储2^31^-1个元素</p>
+<p>常用命令：</p>
+<p>1）集合内操作</p>
+<p>a、添加元素</p>
+<pre><code>sadd key element [element1 ...]
+</code></pre><p>返回的结果是添加成功的元素的个数</p>
+<p>b、删除元素</p>
+<pre><code>srem key element [element1 ...]
+</code></pre><p>返回结果为删除成功元素的个数</p>
+<p>c、计算元素的个数</p>
+<pre><code>scard key
+</code></pre><p>该操作的时间复杂度为<em>O</em>(1)，它不会遍历集合所有元素，而是直接用Redis的内部变量</p>
+<p>d、判断元素是否在集合中</p>
+<pre><code>sismember key element
+</code></pre><p>在集合内返回1，否则返回0</p>
+<p>e、随机从集合返回指定个数的元素</p>
+<pre><code>srandmember key [count]
+</code></pre><p>不指定count，默认返回1个元素</p>
+<p>f、从集合随机弹出元素</p>
+<pre><code>spop key 
+</code></pre><p>与srandmember的区别：</p>
+<p>spop命令执行后，元素会将元素从集合中删除，二srandmember不会</p>
+<p>g、获取所有元素</p>
+<pre><code>smembers key
+</code></pre><p>smembers和lrange、hgetall一样，都是比较重的操作，建议用sscan来替代</p>
+<p>2）集合间操作</p>
+<p>a、求多个集合的交集</p>
+<pre><code>sinter key [key1 ...]
+</code></pre><p>b、求多个集合的并集</p>
+<pre><code>sunion key [key1 ...]
+</code></pre><p>取并集会去重</p>
+<p>c、求多个集合的差集</p>
+<pre><code>sdiff key [key1 ...]
+</code></pre><p>d、将交集、并集、差集的结果保存</p>
+<pre><code>sinterstore destination key [key1 ...]
+sunionstore destination key [key1 ...]
+sdiffstore destination key [key1 ...]
+</code></pre><p>集合间的运算在元素较多的情况下会比较耗时，所以redis提供了上面三个命令将集合的交集、并集、差集保存在destination key中，其结果也是一个集合类型</p>
+<p>内部编码：</p>
+<p>1）intset（整数集合）：当集合中的元素都是整数且元素的个数小于512个时，采用此编码</p>
+<p>2）hashtable（哈希表）：当集合类型不满足1）时，采用此编码 </p>
+<p>使用场景：</p>
+<p>a、标签（sadd）：给用户添加标签或者给标签添加用户，这两个操作要在一个事物里运行，防止部分命令失败造成的数据不一致。同时，删除用户的标签以及删除标签下的用户也需要在同一个事物里面运行</p>
+<p>b、生成随机数，抽奖（spop/srandmember）</p>
+<p>c、社交需求（sadd+sinter）</p>
+<h2 id="8、有序集合"><a href="#8、有序集合" class="headerlink" title="8、有序集合"></a>8、有序集合</h2><p>有序集合有如下特点：</p>
+<p>a、和集合一样不能有重复元素</p>
+<p>b、可以排序，但是它和列表使用索引下标作为排序依据不同的是，它给每个元素设置一个分数（score）作为排序的依据</p>
+<p>c、虽然有序集合中不能有重复元素，但是score可以重复</p>
+<p>下表是列表、集合、有序集合的异同点</p>
+<table>
+<thead>
+<tr>
+<th>数据结构</th>
+<th>允许重复</th>
+<th>是否有序</th>
+<th>有序实现方式</th>
+<th>应用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>列表</td>
+<td>允许</td>
+<td>是</td>
+<td>索引下标</td>
+<td>时间轴、队列</td>
+</tr>
+<tr>
+<td>集合</td>
+<td>否</td>
+<td>否</td>
+<td>无</td>
+<td>标签、社交</td>
+</tr>
+<tr>
+<td>有序集合</td>
+<td>否</td>
+<td>是</td>
+<td>分值</td>
+<td>排行榜、社交</td>
+</tr>
+</tbody>
+</table>
+<p>常用命令：</p>
+<p>1）集合内操作：</p>
+<p>a、添加成员</p>
+<pre><code>zadd key score member [score1 member1 ...]
+</code></pre><p>返回结果为成功添加成员的个数</p>
+<p>该命令有两点需要注意：</p>
+<p>i、redis 3.2为zadd命令添加了nx、xx、ch、incr四个选项：</p>
+<ul>
+<li>nx：member必须不存在，才可以设置成功，用于添加</li>
+<li>xx：member必须存在，才可以设置成功，用于更新</li>
+<li>ch：返回此操作后，有序集合元素和分数发生变化的个数</li>
+<li>incr：对score做增加，相当于后面介绍的zincrby</li>
+</ul>
+<p>ii、有序集合相比集合提供了排序字段，但是也产生了代价，zadd的时间复杂度为<em>O</em>(log(<em>n</em>)),add的时间复杂度为<em>O</em>(1)</p>
+<p>b、计算成员的个数</p>
+<pre><code>zcard key
+</code></pre><p>和集合一样，其时间复杂度为<em>O</em>(1)</p>
+<p>c、计算某个成员的分数</p>
+<pre><code>zscore key member
+</code></pre><p>d、计算成员的排名</p>
+<pre><code>zrank key member
+zrevrank key member
+</code></pre><p>zrank是按照分数从低到高返回排名，zrevrank是按照分数从高到低返回排名（排名从0开始计算）</p>
+<p>e、删除成员</p>
+<pre><code>zrem key member [member1 ...]
+</code></pre><p>返回结果为删除成功的个数</p>
+<p>f、增加成员分数</p>
+<pre><code>zincrby key increment member
+</code></pre><p>返回结果为成员的最新分数</p>
+<p>g、返回指定排名范围内的成员</p>
+<pre><code>zrange    key start end [withscores]
+zrevrange key start end [withscores]
+</code></pre><p>zrange是从低到高返回，zrevrange是从高到低返回</p>
+<p>h、返回指定分数范围的成员</p>
+<pre><code>zrangeByscore    key mix max [withscores] [limit offset count]
+zrevrangeByscore key mix max [withscores] [limit offset count]
+</code></pre><p>withscores 选项会同时返回每个成员的分数。[limit offset count]选项可以限制输出的起始位置和个数</p>
+<p>-inf和+inf分别代表无限小和无限大</p>
+<p>指定范围可以支持开区间()和闭区间[]</p>
+<p>i、返回指定分数范围成员个数</p>
+<pre><code>zcount key min max
+</code></pre><p>j、删除指定范围内的升序元素</p>
+<pre><code>zremrangebyrank key start end
+</code></pre><p>k、删除指定范围分数的成员</p>
+<pre><code>zremrangebyscore key min max
+</code></pre><p>2）集合间操作：</p>
+<p>a、交集</p>
+<pre><code>zinterstore destination numkeys key [key1 ...] [weights weight [weight1 ...]] [aggregate sum|min|max]
+</code></pre><p>该命令的参数说明如下：</p>
+<p>i、destination：交集计算结果保存到这个键</p>
+<p>ii、numkeys：需要做交集计算键的个数</p>
+<p>iii、key[key1 …]：需要做交集的计算的键</p>
+<p>iv、weights weight[weight1 …]：每个键的权重，默认为1</p>
+<p>v、aggregate sum|min|max：计算成员交集后，分值可以按照sum、min、max做汇总，默认值为sum</p>
+<p>b、并集</p>
+<pre><code>zunionstore destination numkeys key [key1 ...] [weights weight [weight1 ...]] [aggregate sum|min|max]
+</code></pre><p>参数说明同a</p>
+<p>内部编码：</p>
+<p>1）ziplist（压缩列表）：元素个数小于128个且每个元素的值的大小小于64字节时，会使用该编码，可以节省内存空间</p>
+<p>2）skiplist（跳跃表）：当1）不满足时，会选择该种编码格式</p>
+<p>使用场景：排行榜</p>
+<p>1）添加用户赞数，可以使用zadd+zincrby</p>
+<p>2）取消用户赞数，zrem</p>
+<p>3）展示获取赞数最多的十个用户zrevrange</p>
+<p>4）展示用户信息以及用户分数，zscore+zrank</p>
+<h2 id="9、键管理"><a href="#9、键管理" class="headerlink" title="9、键管理"></a>9、键管理</h2><h3 id="1）单个键管理"><a href="#1）单个键管理" class="headerlink" title="1）单个键管理"></a>1）单个键管理</h3><h4 id="a、键重命名"><a href="#a、键重命名" class="headerlink" title="a、键重命名"></a>a、键重命名</h4><pre><code>rename key newkey
+</code></pre><p>如果在rename之前，键newkey已经存在，那么它的值将被覆盖</p>
+<p>为了防止被强行rename，redis提供了renamenx命令，确保只有newkey不存在时候才被覆盖，若返回结果为0，则表示没有完成重命名</p>
+<p>注意：</p>
+<p>i、由于重命名期间会执行del命令删除旧的键，如果键对应的值比较大，会村子阻塞redis的可能，这点不要忽视</p>
+<p>ii、如果rename和renamenx中的key和newkey是相同的，在redis3.2之前是可以rename的，之后会报错</p>
+<h4 id="b、随机返回一个键"><a href="#b、随机返回一个键" class="headerlink" title="b、随机返回一个键"></a>b、随机返回一个键</h4><pre><code>randomkey
+</code></pre><h4 id="c、键过期"><a href="#c、键过期" class="headerlink" title="c、键过期"></a>c、键过期</h4><pre><code>expire key seconds #键在seconds秒后过期
+expireat key timestamp #键在秒级时间戳timestamp后过期
+</code></pre><p>ttl命令和pttl命令都可以查询键的声誉过期时间，但是pttl精确度更高，可以达到毫秒级别，其有三种返回值：</p>
+<p>i、大于等于0的整数：键剩余的过期时间（ttl是秒，pttl是毫秒）</p>
+<p>ii、-1:键没有设置过期时间</p>
+<p>iii、-2:键不存在</p>
+<pre><code>pexpire key milliseconds #键在milliseconds毫秒后过期
+pexpireat key milliseconds-timestamp #键在毫秒级时间戳后过期
+</code></pre><p>使用redis相关过期命令需要注意以下几点：</p>
+<p>i、如果expire key的键不存在，返回结果为0</p>
+<p>ii、如果过期时间为负值，键会立即被删除，此时就是del</p>
+<p>iii、persist命令可以将键的过期时间清除</p>
+<pre><code>persist key
+</code></pre><p>==iv、对于字符串类型键，执行set命令会去掉过期时间==</p>
+<p>v、redis不支持二级数据结构（例如哈希、列表）内部元素的过期功能</p>
+<p>vi、setex命令作为set+expire的组合，不但是原子执行，同时减少了一次网络通讯时间</p>
+<h4 id="d、键迁移"><a href="#d、键迁移" class="headerlink" title="d、键迁移"></a>d、键迁移</h4><p>i、move</p>
+<pre><code>move key db
+</code></pre><p>move命令用于在redis内部进行数据迁移</p>
+<p>ii、dump+restore</p>
+<pre><code>dump key
+restore key ttl value
+</code></pre><p>dump+restore可以实现在不同的redis实例之间进行数据迁移的功能，整个恰伊工作分两步：</p>
+<p>i）在源redis，dump命令会将键值序列化，格式采用的是RDB格式</p>
+<p>ii）在目标redis上，restore命令将上面序列化的值进行复原，其中ttl参数代表过期时间，如果ttl=0，代表没有过期时间</p>
+<p>注意：</p>
+<p>i）整个迁移过程并非原子性的，而是通过客户端分步完成的</p>
+<p>ii）迁移过程是开启了两个客户端连接，所以dump的结果不是在源redis和目标redis之间进行传输</p>
+<p>iii、migrate</p>
+<pre><code>migrate host port key|&quot;&quot; destination-db timeout [copy] [replace] [keys key [key1 ...]]
+</code></pre><p>migrate命令也是用于在redis实例间进行数据迁移的，实际上migrate命令就是将dump+restore+del三个命令进行组合，从而简化了操作流程。migrate命令具有原子性。</p>
+<p>该命令和dump+restore的区别：</p>
+<p>i）整个过程是原子执行的，不需要在多个redis实例上开启客户端的，只需要在源redis上执行migrate命令即可</p>
+<p>ii）migtate命令的数据传输直接在源redis和目标redis上完成的</p>
+<p>iii）目标redis完成restore后会发送OK给源redis，源redis接收后会根据migrate对应的选项来决定是否在源redis上删除对应的键</p>
+<p>参数说明：</p>
+<p>i）host：目标redis的ip地址</p>
+<p>ii）port：目标redis的端口</p>
+<p>iii）key|“”：如果要迁移一个键，key就是要迁移的键，如果要迁移多个键，则此处是“”</p>
+<p>iv）destination-db：目标redis的数据库索引，如果要迁移到0号数据库，则这里就填0</p>
+<p>v）timeout）迁移的超时时间，单位为毫秒</p>
+<p>vi）[copy]：如果添加此项，迁移后并不删除源键</p>
+<p>vii）[replace]：如果添加此项，不管目标redis是否存在该键，都会正常迁移进行数据覆盖</p>
+<p>viii）[keys key [key1 …]]：迁移多个键</p>
+<p>下表是三种迁移方式的比较</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>作用域</th>
+<th>原子性</th>
+<th>支持多个键</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>move</td>
+<td>redis实例内部</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>dump+restore</td>
+<td>redis实例之间</td>
+<td>否</td>
+<td>否</td>
+</tr>
+<tr>
+<td>migrate</td>
+<td>redis实例之间</td>
+<td>是</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<p>这三种迁移模式中，建议使用第三种进行迁移</p>
+<h3 id="2）遍历键"><a href="#2）遍历键" class="headerlink" title="2）遍历键"></a>2）遍历键</h3><h4 id="a、全量遍历键"><a href="#a、全量遍历键" class="headerlink" title="a、全量遍历键"></a>a、全量遍历键</h4><pre><code>keys pattern
+</code></pre><p>pattern可以使用glob风格的通配符：</p>
+<ul>
+<li>*代表匹配任意字符</li>
+<li>？代表匹配一个字符</li>
+<li>[]代表匹配部分字符，如[1，3]代表匹配1，3，[1-10]代表匹配1到10的任意数字</li>
+</ul>
+<p>遍历键的使用场景：</p>
+<ul>
+<li>在一个不对外提供服务的redis从节点上执行，这样不会阻塞到客户端的请求，但是会影响到主从复制</li>
+<li>如果确认键值总数却是比较少，可以执行该命令</li>
+<li>使用scan命令渐进式的遍历所有键，可以有效防止阻塞</li>
+</ul>
+<h4 id="b、渐进式遍历"><a href="#b、渐进式遍历" class="headerlink" title="b、渐进式遍历"></a>b、渐进式遍历</h4><pre><code>scan cursor [match pattern] [count number]
+</code></pre><p>每次执行scan，可以想象成只扫描一个字典中的一部分键，直到将字典中的所有键遍历完毕，其返回结果是下次遍历scan需要的cursor</p>
+<p>参数说明：</p>
+<p>i）cursor：必须参数，实际上cursor是一个游标，第一次遍历从0开始，每次scan遍历完都会返回当前游标的值，直到游标值为0，表示遍历结束</p>
+<p>ii）match pattren：模式匹配，和keys的模式匹配类似</p>
+<p>iii）count number：表明每次要遍历的键的个数，默认是10个，该参数可以适当增大</p>
+<p>除了scan外，redis提供了面向哈希类型、集合类型、有序集合的扫描遍历命令，解决诸如hgetall、smembers、zrange可能产生的阻塞问题，对应命令分别是hscan、sscan、zscan，它们的用法和scan类似</p>
+<p>渐进式遍历的缺点：如果在scan的过程中有键发生变化（如增加、删除、修改），那么遍历效果可能会碰到如下问题：新增的键可能没有遍历到，遍历出了重复的键等情况。</p>
+<h3 id="3）数据库管理"><a href="#3）数据库管理" class="headerlink" title="3）数据库管理"></a>3）数据库管理</h3><p>a、切换数据库</p>
+<pre><code>select dbindex
+</code></pre><p>dbindex为数据库编号，redis中，一个实例默认为16个数据库，编号从0开始</p>
+<p>b、flushdb/flushall</p>
+<p>flushdb/flushall用于清除数据库，两者之间的区别是flushdb只清除当前数据库，flushall会清除所有数据库</p>
+<p>这两个命令带来的两个问题：</p>
+<p>a、flushdb/flushall命令会将所有的数据清除，一旦误操作后果不堪设想，可以rename-command配置规避这个问题</p>
+<p>b、如果当前数据库键值对比较多，flushdb/flushall存在阻塞redis的可能性</p>
+
+            </article>
+            
+                <div class="share">
+                    <!--开启分享-->
+<div class="share-component" data-disabled="google,twitter,facebook" data-description=""></div>
+
+<script src="/js/share.min.js"></script>
+
+                </div>    
+            
+
+            
+            
+                
+<div class="comments">
+    <div id="container"></div>
+        <script src="/js/gitment.browser.js"></script>
+         <script>
+            var gitment = new Gitment({
+                id: '/2019/01/13/redis/redis学习之基础/',
+                owner: '',
+                repo: '',
+                oauth: {
+                    client_id: "",
+                    client_secret: "",
+                }
+            })
+        gitment.render('container')
+        </script>
+</div>
+
+            
+
+        </div>
+        <div class="column one-fourth">
+            
+                
+                
+
+
+<h3>Post Directory</h3>
+
+<div id="post-directory-module">
+	<section class="post-directory">
+		<p><strong class="toc-title">文章目录</strong></p>
+		<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一、redis启动命令"><span class="toc-text">一、redis启动命令</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#二、redis-api的使用"><span class="toc-text">二、redis api的使用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、redis的一些全局命令"><span class="toc-text">1、redis的一些全局命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、redis数据结构的内部编码"><span class="toc-text">2、redis数据结构的内部编码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、redis的单线程处理机制"><span class="toc-text">3、redis的单线程处理机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、字符串"><span class="toc-text">4、字符串</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5、哈希"><span class="toc-text">5、哈希</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6、列表"><span class="toc-text">6、列表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7、集合"><span class="toc-text">7、集合</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8、有序集合"><span class="toc-text">8、有序集合</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9、键管理"><span class="toc-text">9、键管理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1）单个键管理"><span class="toc-text">1）单个键管理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#a、键重命名"><span class="toc-text">a、键重命名</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#b、随机返回一个键"><span class="toc-text">b、随机返回一个键</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#c、键过期"><span class="toc-text">c、键过期</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#d、键迁移"><span class="toc-text">d、键迁移</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2）遍历键"><span class="toc-text">2）遍历键</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#a、全量遍历键"><span class="toc-text">a、全量遍历键</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#b、渐进式遍历"><span class="toc-text">b、渐进式遍历</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3）数据库管理"><span class="toc-text">3）数据库管理</span></a></li></ol></li></ol></li></ol>
+	</section>
+</div>
+            
+        </div>
+    </div>
+</section>
+</body>
+<footer class="container">
+    <div class="site-footer" role="contentinfo">
+        <div class="copyright left mobile-block">
+                © 2016
+                <span title="yumemor">yumemor</span>
+                <a href="javascript:window.scrollTo(0,0)" class="right mobile-visible">TOP</a>
+        </div>
+
+        <ul class="site-footer-links right mobile-hidden">
+            <li>
+                <a href="javascript:window.scrollTo(0,0)">TOP</a>
+            </li>
+        </ul>
+
+        <a href="https://github.com/yumemor/hexo-theme-primer" target="_blank" aria-label="view source code">
+            <span class="mega-octicon octicon-mark-github" title="GitHub"></span>
+        </a>
+
+        <ul class="site-footer-links mobile-hidden">
+            
+                  
+                  <li>
+                    <a href="/" title="主页">主页</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/categories/" title="分类">分类</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/message/" title="留言">留言</a>
+                  </li>
+            
+            <li>
+                <a href="/atom.xml">
+                    <span class="octicon octicon-rss" style="color:orange;"></span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</footer>
+
+		<script src="/js/geopattern.js"></script>
+		<script src="/js/highlight.pack.js"></script>
+		<script src="/lib/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
+
+		
+			<script src="/js/toc.js"></script>
+		
+
+		<script src="/js/index.js"></script>
+
+		 <script src="/js/popular_repo.js"></script> 
+
+	

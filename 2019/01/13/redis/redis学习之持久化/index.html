@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans" prefix="og: http://ogp.me/ns#" class="han-init">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="icon" href="/favicon.ico">
+  
+  <title>李晓杰的个人博客</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox-1.3.4.css">
+  <!--在这里倒入jquery 方便处理部分页面的jquery-->
+  <script src="https://cdn.staticfile.org/jquery/1.7/jquery.min.js" type="text/javascript"></script>
+</head></html>
+
+<body>
+	<header class="site-header navfixed-false">
+  <div class="container">
+      <h1><a href="/" title="李晓杰的个人博客"><span class="octicon octicon-mark-github"></span> 李晓杰的个人博客</a></h1>
+      <nav class="site-header-nav" role="navigation">
+        
+              
+              <a href="/" class=" site-header-nav-item hvr-underline-from-center" title="主页">主页</a>
+        
+              
+              <a href="/categories/" class=" site-header-nav-item hvr-underline-from-center" title="分类">分类</a>
+        
+              
+              <a href="/message/" class=" site-header-nav-item hvr-underline-from-center" title="留言">留言</a>
+        
+      </nav>
+  </div>
+</header>
+
+	
+<section class="collection-head geopattern" data-pattern-id="">
+    <div class="container">
+        <div class="collection-title">
+            <h1 class="collection-header">
+                
+            </h1>
+            
+                <div class="collection-info">
+                    <span class="meta-info">
+                        <span class="octicon octicon-calendar"></span>
+                        <time datetime="2019-01-13T11:02:13.143Z" itemprop="datePublished">2019-01-13</time>
+                    </span>
+                    
+                </div>
+            
+        </div>
+    </div>
+</section>
+	<section class="container">
+    <div class="columns">
+        <div class="column  three-fourths ">
+            <article class="article-content markdown-body">
+                <p>redis支持AOF和RDB两种持久化机制。</p>
+<h1 id="一、RDB"><a href="#一、RDB" class="headerlink" title="一、RDB"></a>一、RDB</h1><p>RDB持久化是把当前进程数据生成的快照保存到硬盘的过程，触发RDB持久化过程分为手动触发和自动触发</p>
+<h2 id="1、触发机制"><a href="#1、触发机制" class="headerlink" title="1、触发机制"></a>1、触发机制</h2><p>手动触发分别对应<code>save</code>和<code>bgsave</code>命令：</p>
+<ul>
+<li>save命令：阻塞当前redis服务器，知道RDB过程完成为止，杜宇内存比较大的实例会造成场时间的阻塞，线上环境不建议使用</li>
+<li>bgsave命令：redis进程执行fork操作创建子进程，RDB持久化过程由子进程负责，完成后自动结束。阻塞只发生在fork阶段，一般时间很短</li>
+</ul>
+<h2 id="2、哪些场景会触发bgsave操作"><a href="#2、哪些场景会触发bgsave操作" class="headerlink" title="2、哪些场景会触发bgsave操作"></a>2、哪些场景会触发bgsave操作</h2><ul>
+<li>使用save相关配置，如“save m n”，表示m秒内数据集存在n次修改时，自动触发<code>bgsave</code></li>
+<li>如果从节点执行全量复制操作，祝节点自动执行<code>bgsave</code>生成RDB文件并发送给从节点</li>
+<li>执行<code>debug reload</code>命令重新加载redis时，也会自动触发save操作</li>
+<li>默认情况下执行<code>shutdown</code>命令时，如果没有开启AOF持久化功能则自动执行bgsave</li>
+</ul>
+<h3 id="3、处理流程"><a href="#3、处理流程" class="headerlink" title="3、处理流程"></a>3、处理流程</h3><ul>
+<li>执行<code>bgsave</code>命令，redis父进程判断当前是否存在正在执行的子进程，如RDB/AOF子进程，如果存在<code>bgsave</code>命令直接退出</li>
+<li>父进程执行fork操作创建子进程，fork操作过程中父进程会阻塞</li>
+<li>子进程创建RDB文件，根据父进程内存生成临时快照文件，完成后对原有文件进行原子替换</li>
+<li>子进程发送信号给父进程表示完成，父进程更新统计信息</li>
+</ul>
+<h3 id="4、RDB文件的处理"><a href="#4、RDB文件的处理" class="headerlink" title="4、RDB文件的处理"></a>4、RDB文件的处理</h3><h4 id="1）保存"><a href="#1）保存" class="headerlink" title="1）保存"></a>1）保存</h4><p>RDB文件保存在dir配置指定的目录下，文件名通过dbfilename配置指定</p>
+<h4 id="2-压缩"><a href="#2-压缩" class="headerlink" title="2)压缩"></a>2)压缩</h4><p>redis默认采用LZF算法对生成的RDB文件进行压缩处理，压缩后的文件远远小于内存大小，默认开启</p>
+<h4 id="3）校验"><a href="#3）校验" class="headerlink" title="3）校验"></a>3）校验</h4><p>如果redis加载损坏的RDB文件时会拒绝启动</p>
+<h3 id="5、RDB的优缺点"><a href="#5、RDB的优缺点" class="headerlink" title="5、RDB的优缺点"></a>5、RDB的优缺点</h3><p>优点：</p>
+<p>1）RDB是一个紧凑压缩的二进制文件，代表redis在某个时间点上的数据快照。非常适用于备份、全量复制等场景</p>
+<p>2）redis加载RDB恢复数据远远快于AOF的方式</p>
+<p>缺点：</p>
+<p>1）RDB方式数据没办法做到实时持久化/秒级持久化。因为bgsave每次运行都要执行fork操作创建子进程，属于重量级操作，频繁执行成本过高</p>
+<p>2）RDB文件使用特定二进制格式保存，redis版本演进过程中有多个格式的RDB版本，存在老版本redis服务无法兼容新版本RDB格式的问题</p>
+<h1 id="二、AOF"><a href="#二、AOF" class="headerlink" title="二、AOF"></a>二、AOF</h1><p>AOF持久化（append only file）持久化：以独立日志的方式记录每次写命令，重启时再重新执行AOF文件中的命令达到恢复数据的目的。</p>
+<p>AOF的主要作用时解决了数据持久化的实时性，目前已经过时redis持久化的主流方式</p>
+<h2 id="1、使用AOF"><a href="#1、使用AOF" class="headerlink" title="1、使用AOF"></a>1、使用AOF</h2><p> 开启AOF功能需要设置配置：<code>appendonly yes</code>，默认不开启。AOF文件名通过appendfilename配置设置，默认文件名时appendonly.aof。保存路径与RDB持久化方式一致。</p>
+<p>AOF的工作流程如下：</p>
+<ul>
+<li>所有的写入命令会追加到aof_buf（缓冲区）中</li>
+<li>AOF缓冲区根据对一个的策略向硬盘做同步操作</li>
+<li>随着AOF文件越来越大，需要定期对AOF文件进行重写，达到压缩的目的</li>
+<li>当redis服务器重启时，可以加载AOF文件进行数据恢复</li>
+</ul>
+<h2 id="2、文件同步"><a href="#2、文件同步" class="headerlink" title="2、文件同步"></a>2、文件同步</h2><p>redis提供了多种AOF缓冲区同步文件策略，由参数appendfsync控制，分别如下所示：</p>
+<ul>
+<li>配置为always时，每次可入都要同步AOF文件，在一般的STAT硬盘上，redis只能支持大约几百TPS的写入，不建议配置</li>
+<li>配置为no，由于操作系统每次同步AOF文件的周期不可控，而且会加大每次同步硬盘的数据量，虽然提升了性能，但数据的安全性无法保证</li>
+<li>配置为everysec，这个是建议的配置策略，也是默认的配置，做到兼顾性能和数据安全性。理论上只有在系统突然宕机的情况下丢失1秒的数据</li>
+</ul>
+<h2 id="3、重写机制"><a href="#3、重写机制" class="headerlink" title="3、重写机制"></a>3、重写机制</h2><p>随着命令不断 写入AOF，文件会越来越大，为了解决这个问题，redis引入AOF重写机制压缩文件体积。==AOF重写是把redis进程内的数据转化为写命令同步到新AOF文件的过程==</p>
+<p>重写后的文件为什么可以变小？</p>
+<ul>
+<li>进程内已经超时的数据不再写入文件</li>
+<li>旧的AOF文件含有无效命令，如del key1、hdel key2、 srem keys、 set a 111、set a 222等。重写使用进程内数据直接生成，这样新的AOF文件只保留最终的写入命令</li>
+<li>多条写命令可以合并为一个，如lpush list a、lpush list b可以转化为lpush list a b。为了防止单条命令过大造成客户端缓冲区溢出，对于list、set、zset、hash等类型的操作，以64个元素为界拆分为多条</li>
+</ul>
+<p>AOF重写降低了文件的占用空间，还有一个目的就是，更小的AOF文件可以更快的被redis加载</p>
+<p>AOF重写可以手动触发和自动触发：</p>
+<p>1）手动触发：直接调用bgrewriteaof命令</p>
+<p>2）自动触发：根据auto-aof-rewrite-min-size和auto-aof-rewrite-percentage参数确定自动触发时机</p>
+<ul>
+<li>auto-aof-rewrite-min-size：表示运行AOF重写时文件最小体积，默认为64MB</li>
+<li>auto-aof-rewrite-percentage：当前AOF文件空间和上一次重写后AOF文件空间的比值</li>
+</ul>
+<p>当当前AOF空间大于设置的最小体积且空间比大于等于设置的空间比时，会触发重写</p>
+<p>AOF重写的流程：</p>
+<p>1）执行AOF重写请求</p>
+<ul>
+<li>如果当前进程正在执行AOF重写，则请求不执行</li>
+<li>如果当前进程正在执行bgsave操作，重写命令延迟到bgsave完成之后再执行</li>
+</ul>
+<p>2）父进程执行fork创建子进程，开销等同于bgsave过程</p>
+<p>3）主进程fork操作完成后，继续响应其它命令。所有修改命令依然写入AOF缓冲区并根据appendfsync策略同步到硬盘，保证原有AOF机制的正确性</p>
+<p>由于fork操作运用了写时复制技术，子进程只能共享fork操作时的内存数据。由于父进程依然响应命令，redis使用“AOF重写缓冲区”保存这部分新数据，防止新AOF文件生成期间丢失这部分数据</p>
+<p>4）子进程根据内存快照，按照命令合并规则写入到新的AOF文件</p>
+<p>5）新AOF文件写入完成后，子进程发送信号给父进程，父进程更新统计信息</p>
+<p>父进程把AOF重写缓冲区的数据写入到新的AOF文件</p>
+<p>使用新AOF文件替换老文件，完成AOF重写</p>
+<h2 id="4、重启加载"><a href="#4、重启加载" class="headerlink" title="4、重启加载"></a>4、重启加载</h2><p>AOF和RD文件都可用于服务器重启时的数据恢复</p>
+<p>流程如下：</p>
+<p>1）AOF持久化开启且存在AOF文件时，优先加载AOF文件</p>
+<p>2）AOF关闭或者AOF文件不存在时，加载RDB文件</p>
+<p>3）加载AOF/RDB文件成功后，redis启动成功</p>
+<p>4）AOF/RDB文件存在错误时，redis启动失败并打印错误日志 </p>
+
+            </article>
+            
+                <div class="share">
+                    <!--开启分享-->
+<div class="share-component" data-disabled="google,twitter,facebook" data-description=""></div>
+
+<script src="/js/share.min.js"></script>
+
+                </div>    
+            
+
+            
+            
+                
+<div class="comments">
+    <div id="container"></div>
+        <script src="/js/gitment.browser.js"></script>
+         <script>
+            var gitment = new Gitment({
+                id: '/2019/01/13/redis/redis学习之持久化/',
+                owner: '',
+                repo: '',
+                oauth: {
+                    client_id: "",
+                    client_secret: "",
+                }
+            })
+        gitment.render('container')
+        </script>
+</div>
+
+            
+
+        </div>
+        <div class="column one-fourth">
+            
+                
+                
+
+
+<h3>Post Directory</h3>
+
+<div id="post-directory-module">
+	<section class="post-directory">
+		<p><strong class="toc-title">文章目录</strong></p>
+		<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一、RDB"><span class="toc-text">一、RDB</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、触发机制"><span class="toc-text">1、触发机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、哪些场景会触发bgsave操作"><span class="toc-text">2、哪些场景会触发bgsave操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3、处理流程"><span class="toc-text">3、处理流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4、RDB文件的处理"><span class="toc-text">4、RDB文件的处理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1）保存"><span class="toc-text">1）保存</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-压缩"><span class="toc-text">2)压缩</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3）校验"><span class="toc-text">3）校验</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5、RDB的优缺点"><span class="toc-text">5、RDB的优缺点</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#二、AOF"><span class="toc-text">二、AOF</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、使用AOF"><span class="toc-text">1、使用AOF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、文件同步"><span class="toc-text">2、文件同步</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、重写机制"><span class="toc-text">3、重写机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、重启加载"><span class="toc-text">4、重启加载</span></a></li></ol></li></ol>
+	</section>
+</div>
+            
+        </div>
+    </div>
+</section>
+</body>
+<footer class="container">
+    <div class="site-footer" role="contentinfo">
+        <div class="copyright left mobile-block">
+                © 2016
+                <span title="yumemor">yumemor</span>
+                <a href="javascript:window.scrollTo(0,0)" class="right mobile-visible">TOP</a>
+        </div>
+
+        <ul class="site-footer-links right mobile-hidden">
+            <li>
+                <a href="javascript:window.scrollTo(0,0)">TOP</a>
+            </li>
+        </ul>
+
+        <a href="https://github.com/yumemor/hexo-theme-primer" target="_blank" aria-label="view source code">
+            <span class="mega-octicon octicon-mark-github" title="GitHub"></span>
+        </a>
+
+        <ul class="site-footer-links mobile-hidden">
+            
+                  
+                  <li>
+                    <a href="/" title="主页">主页</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/categories/" title="分类">分类</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/message/" title="留言">留言</a>
+                  </li>
+            
+            <li>
+                <a href="/atom.xml">
+                    <span class="octicon octicon-rss" style="color:orange;"></span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</footer>
+
+		<script src="/js/geopattern.js"></script>
+		<script src="/js/highlight.pack.js"></script>
+		<script src="/lib/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
+
+		
+			<script src="/js/toc.js"></script>
+		
+
+		<script src="/js/index.js"></script>
+
+		 <script src="/js/popular_repo.js"></script> 
+
+	

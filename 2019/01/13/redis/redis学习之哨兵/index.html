@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans" prefix="og: http://ogp.me/ns#" class="han-init">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="icon" href="/favicon.ico">
+  
+  <title>李晓杰的个人博客</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox-1.3.4.css">
+  <!--在这里倒入jquery 方便处理部分页面的jquery-->
+  <script src="https://cdn.staticfile.org/jquery/1.7/jquery.min.js" type="text/javascript"></script>
+</head></html>
+
+<body>
+	<header class="site-header navfixed-false">
+  <div class="container">
+      <h1><a href="/" title="李晓杰的个人博客"><span class="octicon octicon-mark-github"></span> 李晓杰的个人博客</a></h1>
+      <nav class="site-header-nav" role="navigation">
+        
+              
+              <a href="/" class=" site-header-nav-item hvr-underline-from-center" title="主页">主页</a>
+        
+              
+              <a href="/categories/" class=" site-header-nav-item hvr-underline-from-center" title="分类">分类</a>
+        
+              
+              <a href="/message/" class=" site-header-nav-item hvr-underline-from-center" title="留言">留言</a>
+        
+      </nav>
+  </div>
+</header>
+
+	
+<section class="collection-head geopattern" data-pattern-id="">
+    <div class="container">
+        <div class="collection-title">
+            <h1 class="collection-header">
+                
+            </h1>
+            
+                <div class="collection-info">
+                    <span class="meta-info">
+                        <span class="octicon octicon-calendar"></span>
+                        <time datetime="2019-01-13T11:02:13.139Z" itemprop="datePublished">2019-01-13</time>
+                    </span>
+                    
+                </div>
+            
+        </div>
+    </div>
+</section>
+	<section class="container">
+    <div class="columns">
+        <div class="column  three-fourths ">
+            <article class="article-content markdown-body">
+                <h1 id="一、-Redis-Sentinel的高可用性"><a href="#一、-Redis-Sentinel的高可用性" class="headerlink" title="一、 Redis Sentinel的高可用性"></a>一、 Redis Sentinel的高可用性</h1><p>当主节点出现故障时，Redis Sentinel能自动完成<strong>故障发现</strong>和<strong>故障转移</strong>，并通知应用方，从而实现真正的高可用.</p>
+<p>Redis Sentinel是一个分布式架构，其中包含若干个Sentinel节点和Redis数据节点，每个Sentinel节点会对数据节点和其余的Sentinel节点进行监控，当它发现节点不可用时，会对节点做下线标识。如果被标识的是主节点，他还会和其他Sentinel节点进行协商，当大多数Sentinel节点都认为主节点不可达时，它们会选举出一个Sentinel节点来完成自动故障转移工作，同时会将这个变化实时通知给Redis应用方。</p>
+<p>Redis Sentinel进行故障转移的步骤如下：</p>
+<p>1、主节点出现故障，此时从节点与主节点失去连接，主从复制失败</p>
+<p>2、每个Sentinel节点通过定期监控发现主节点出现了故障</p>
+<p>3、多个Sentinel节点对主节点的故障达成一致，选举出一个Sentinel节点作为领导者负责故障转移</p>
+<p>4、Sentinel领导者节点进行故障转移</p>
+<p>​    1）选取一个从节点，对其执行<code>slave no one</code>命令使其成为新的主节点</p>
+<p>​      2）原来的从节点成为新的主节点后，更新应用方的主节点信息，重新启动应用方</p>
+<p>​      3）客户端命令其他从节点去复制新的主节点</p>
+<p>​      4）待原来的主节点恢复后，让它去复制新的主节点</p>
+<p>Sentinel的作用就是实现了第4步操作的自动化</p>
+<p>从上边可以看出，Redis Sentinel具有以下几个功能：</p>
+<p>1、<strong>监控</strong>：Sentinel节点会定期监测Redis数据节点、其余Sentinel数据节点是否可达</p>
+<p>2、<strong>通知</strong>：Sentinel节点会将故障转移的结果通知给应用方</p>
+<p>3、<strong>主节点故障转移</strong>：实现从节点晋升为主节点并维护后续正确的主从关系</p>
+<p>4、<strong>配置提供者</strong>：在Redis Sentinel结构中，客户端在初始化的时候连接的是Sentinel节点集合，从中获取主节点信息</p>
+<p>Redis Sentinel节点集合是由多个Sentinel节点组成，这样有两个好处：</p>
+<p>1、对于节点的故障判断是由多个Sentinel节点共同完成，这样可以有效地防止误判</p>
+<p>2、这样即使个别Sentinel节点不可用，整个Sentinel节点集合仍然是健壮的</p>
+<h1 id="二、redis哨兵配置说明"><a href="#二、redis哨兵配置说明" class="headerlink" title="二、redis哨兵配置说明"></a>二、redis哨兵配置说明</h1><p>1、sentinel monitor</p>
+<pre><code>sentinel monitor &lt;master-name&gt; &lt;ip&gt; &lt;port&gt; &lt;quorum&gt;
+</code></pre><p>该配置说明了Sentinel节点要监控的是一个名字叫&lt; master-name &gt;，ip地址和端口为&lt; ip &gt; &lt; port &gt;的主节点。&lt; quorum &gt;代表要判定主节点最终不可达所需要的票数。但实际上Sentinel节点会对所有的节点进行监控，但是在Sentinel节点的配置中没有看到有关从节点和其余Sentinel节点的配置，那是因为Sentinel节点会从主节点中获取有关从节点以及其余Sentinel节点的相关信息</p>
+<p>&lt; quorum &gt;参数用于故障发现和判定，如将quorum配置为2，代表至少有2个Sentinel节点认为主节点不可达，那么这个不可达的判定才是客观的。一般建议将其<strong>设置为Sentinel节点的一半加1</strong>，同时&lt; quorum &gt;还与Sentinel节点的领导者选举有关，至少要有<code>max(quorum,num(sentinels)/2+1)</code>个Sentinel节点参与选举，才能选出领导者Sentinel，从而完成故障转移</p>
+<p>2、sentinel down-after-milliseconds</p>
+<pre><code>sentinel down-after-milliseconds &lt;master-name&gt; &lt;times&gt;
+</code></pre><p> 每个Sentinel节点都要通过定期发送ping命令来判断redis数据节点和其余Sentinel节点是否可达，如果超过了down-after-milliseconds配置的时间且没有有效的回复，则判定节点不可达，&lt; times &gt;单位为毫秒，就是超时时间。</p>
+<p>3、sentinel parallel-syncs</p>
+<pre><code>sentinel parallel-syncs &lt;master-name&gt; &lt;nums&gt;
+</code></pre><p>当Sentinel节点集合对主节点故障判定达成一致时，Sentinel领导者节点会做故障转移操作，选出新的主节点，原来的从节点会向新的主节点发起复制操作，<code>parallel-syncs</code>就是用来限制在一次故障转移之后，每次向新的主节点同时发起复制操作的从节点数，parallel-syncs=3表示三个从节点同时向主节点发起复制操作，parallel-syncs=1表示一个从节点同时向主节点发起复制操作，这个时候会发起轮询复制</p>
+<p>4、sentinel failover-timeout</p>
+<pre><code>sentinel failover-timeout &lt;master-name&gt; &lt;times&gt;
+</code></pre><p>failover-timeout通常被解释成故障转移的超时时间，但实际上它作用于故障转移的各个阶段：</p>
+<p>a、选出合适的从节点</p>
+<p>b、晋升选出的从节点为主节点</p>
+<p>c、命令其余从节点复制新的主节点</p>
+<p>d、等待原主节点恢复后命令它去复制新的主节点</p>
+<p>failover-timeout的作用具体体现在四个方面：</p>
+<p>1）如果Redis Sentinel对一个主节点故障转移失败，那么下次再对该主节点做故障转移的起始时间时failover-timeout的2倍</p>
+<p>2）在b阶段时，如果Sentinel节点向a阶段选出来的节点执行<code>slaveof no one</code>操作一直失败（例如该从节点此时出现故障），当过程超过failover-timeout时，则故障转移失败</p>
+<p>3）在b阶段如果执行成功，Sentinel节点还会执行info命令确认a阶段选出来的节点确实晋升为主节点，如果此过程执行时间超过failover-timeout时，则故障转移失败</p>
+<p>4）如果c阶段执行时间超过了failover-timeout（不包含复制时间），则故障转移失败，注意即使超过了这个时间，Sentinel节点也会最终配置从节点去同步最新的主节点</p>
+<p>5、sentinel auth-pass</p>
+<pre><code>sentinel auth-pass &lt;master-name&gt; &lt;password&gt;
+</code></pre><p>如果Sentinel监控的主节点配置了密码，sentinel auth-pass配置通过添加主节点的密码，防止Sentinel节点对主节点无法监控</p>
+<p>6、sentinel notification-script</p>
+<pre><code>sentinel notification-script &lt;master-name&gt; &lt;script-path&gt;
+</code></pre><p>Sentinel notification-script的作用是在故障转移期间，当一些警告级别的Sentinel时间发生（指重要事件，例如-sdown：客观下线，-odown：主观下线）时，会触发对应路径的脚本，并向脚本发送相应的事件参数作为邮件或者短信报警依据</p>
+<p>7、sentinel client-reconfig-script</p>
+<pre><code>sentinel client-reconfig-script &lt;master-name&gt; &lt;script-path&gt;
+</code></pre><p>Sentinel client-reconfig-script的作用时在故障转移结束后，会触发对应路径的脚本，并向脚本发送故障转移结果的相关参数，该脚本会接收每个Sentinel节点传过来的故障转移结果参数，并触发类似短信或邮件报警</p>
+<p>监控多个主节点：</p>
+<p>Sentinel监控多个主节点的配置就是只需要指定多个masterName来区分不同的节点即可</p>
+<h1 id="三、客户端连接"><a href="#三、客户端连接" class="headerlink" title="三、客户端连接"></a>三、客户端连接</h1><p>实现一个Sentinel客户端的基本步骤：</p>
+<p>1、遍历Sentinel节点集合获取一个可用的Sentinel节点</p>
+<p>2、通过<code>sentinel get-master-addr-by-name maserName</code>这个API获取对应主节点的相关信息</p>
+<p>3、验证当前获取的主节点是真正的主节点（使用<code>role</code>或者<code>info replication</code>命令），这样做的目的是为了防止故障转移期间主节点的变化</p>
+<p>4、保持和Sentinel节点集合的联系，时刻获取关于主节点的相关信息</p>
+<h1 id="四、Sentinel的实现原理"><a href="#四、Sentinel的实现原理" class="headerlink" title="四、Sentinel的实现原理"></a>四、Sentinel的实现原理</h1><h2 id="1、三个定时监控任务"><a href="#1、三个定时监控任务" class="headerlink" title="1、三个定时监控任务"></a>1、三个定时监控任务</h2><p>1）每隔10s，每个Sentinel节点会向主节点和从节点发送info命令获取最新的拓扑结构</p>
+<p>这个定时任务的命令：</p>
+<ul>
+<li>通过向主节点执行info命令，获取从节点的信息，这也是为什么Sentinel节点不需要显式配置基恩孔从节点的原因</li>
+<li>当有新的从节点加入时都可以立刻感知出来</li>
+<li>节点不可达或者故障转移后，可以通过info命令实时更新节点的拓扑信息</li>
+</ul>
+<p>2）每隔2秒，每隔Sentinel节点会向redis数据节点<code>__sentin__:hello</code>频道上发送Sentinel节点对于主节点的判断以及当前Sentinel节点的信息，同时每隔Sentinel节点也会订阅该频道，来了解其它Sentinel节点以及它们对主节点的判断，所以这个订单任务可以完成以下两个操作：</p>
+<ul>
+<li>发现新的Sentinel节点</li>
+<li>Sentinel节点之间交换主节点的状态，作为后面客观下线以及领导者选举的依据</li>
+</ul>
+<p>3）每隔1秒，每个Sentinel节点后向主节点、从节点、其余Sentinel节点发送一条ping命令做一次心跳检测，来确认这些节点当前是否可达。</p>
+<h2 id="2、主观下线和客观下线"><a href="#2、主观下线和客观下线" class="headerlink" title="2、主观下线和客观下线"></a>2、主观下线和客观下线</h2><h3 id="1）主观下线"><a href="#1）主观下线" class="headerlink" title="1）主观下线"></a>1）主观下线</h3><p>每个Sentinel节点会每隔1秒对主节点、从节点以及其它Sentinel节点发送ping命令做心跳检测，当这些节点超过down-after-milliseconds没有进行有效回复，Sentinel节点就会对该节点做失败判定，这个行为叫做主观下线，主观下线只是当前Sentinel节点的一家之言，存在误判的可能</p>
+<h3 id="2）客观下线"><a href="#2）客观下线" class="headerlink" title="2）客观下线"></a>2）客观下线</h3><p> 当Sentinel主观下线的节点是主节点时，该Sentinel节点会通过<code>sentinel is_master-down-by-addr</code>命令向其它Sentinel节点询问对主节点的判断，当超过<quorum>个数，Sentinel节点认为主节点确实有问题，这时候该Sentinel节点会做出客观下线判断</quorum></p>
+<p>从节点、Sentinel节点在主观下线后没有后续的故障转移操作</p>
+<p>关于sentinel is_master-down-by-addr命令的介绍：</p>
+<pre><code>sentinel is_master-down-by-addr &lt;ip&gt; &lt;port&gt; &lt;current_epoch&gt; &lt;runid&gt;
+</code></pre><ul>
+<li><p>id：主节点IP</p>
+</li>
+<li><p>port：主节点端口</p>
+</li>
+<li><p>current_epoch：当前配置纪元</p>
+</li>
+<li><p>runid：该参数有两种类型，不同类型决定了此API的作用不同</p>
+<p>a、当runid 等于“*”时，作用是Sentinel节点直接交换对主节点下线的判定</p>
+<p>b、当runid等于当前Sentinel节点的runid时，作用是当前Sentinel节点希望目标Sentinel节点统一自己成为领导者的请求</p>
+</li>
+</ul>
+<h2 id="3、领导者Sentinel节点选举"><a href="#3、领导者Sentinel节点选举" class="headerlink" title="3、领导者Sentinel节点选举"></a>3、领导者Sentinel节点选举</h2><p>Redis使用了Raft算法实现领导者选举</p>
+<p>redis Sentinel进行领导者选举的大体思路：</p>
+<p>1）每个在线的Sentinel节点都有资格成为领导者，当它确认主节点主观下线时，会向其它Sentinel节点发送<code>sentinel is_master-down-by-addr</code>命令，要求将自己设置为领导者</p>
+<p>2）收到命令的Sentinel节点，如果没有统一过其它Sentinel节点的<code>sentinel is_master-down-by-addr</code>命令，将同意该请求，否则拒绝</p>
+<p>3）收到命令的Sentinel节点发现自己的票数已经大于等于<code>max(quorum,num(sentinel)/2+1)</code>，那么它将成为领导者</p>
+<p>4）如果此过程没有选举出领导者，将进入下一次选举</p>
+<p><strong>选举的过程非常快，基本上谁先完成客观下线，谁就是领导者</strong></p>
+<h2 id="4、故障转移"><a href="#4、故障转移" class="headerlink" title="4、故障转移"></a>4、故障转移</h2><p>领导者选举出的Sentinel节点负责故障转移，步骤如下：</p>
+<p>1）在从节点列表中选出一个节点作为新的主节点，选择方法如下：</p>
+<p>​    a、过滤：不健康（主观下线、断线）、5s内没有回复过Sentinel节点ping相应、与主节点失联超过down-milliseconds*10秒</p>
+<p>​    b、选择slave-priority（从节点优先级）最高的从节点列表，如果存在则返回，不存在则继续</p>
+<p>​    c、选择复制偏移量最大的从节点（复制的最完整），如果存在则返回，不存在则继续</p>
+<p>​    d、选择runid最小的从节点</p>
+<p>2）Sentinel领导者节点会对第一步选出来的从节点执行slave no one命令让其成为主节点</p>
+<p>3）Sentinel领导者节点会向剩余的从节点发送命令，让它们成为新主节点的从节点，复制规则和parallel-syncs参数有关</p>
+<p>4）Sentinel节点集合会将原来的主节点更新为从节点，并保持着对其关注，当其恢复ii后命令它去复制新的主节点</p>
+
+            </article>
+            
+                <div class="share">
+                    <!--开启分享-->
+<div class="share-component" data-disabled="google,twitter,facebook" data-description=""></div>
+
+<script src="/js/share.min.js"></script>
+
+                </div>    
+            
+
+            
+            
+                
+<div class="comments">
+    <div id="container"></div>
+        <script src="/js/gitment.browser.js"></script>
+         <script>
+            var gitment = new Gitment({
+                id: '/2019/01/13/redis/redis学习之哨兵/',
+                owner: '',
+                repo: '',
+                oauth: {
+                    client_id: "",
+                    client_secret: "",
+                }
+            })
+        gitment.render('container')
+        </script>
+</div>
+
+            
+
+        </div>
+        <div class="column one-fourth">
+            
+                
+                
+
+
+<h3>Post Directory</h3>
+
+<div id="post-directory-module">
+	<section class="post-directory">
+		<p><strong class="toc-title">文章目录</strong></p>
+		<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一、-Redis-Sentinel的高可用性"><span class="toc-text">一、 Redis Sentinel的高可用性</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#二、redis哨兵配置说明"><span class="toc-text">二、redis哨兵配置说明</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#三、客户端连接"><span class="toc-text">三、客户端连接</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#四、Sentinel的实现原理"><span class="toc-text">四、Sentinel的实现原理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、三个定时监控任务"><span class="toc-text">1、三个定时监控任务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、主观下线和客观下线"><span class="toc-text">2、主观下线和客观下线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1）主观下线"><span class="toc-text">1）主观下线</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2）客观下线"><span class="toc-text">2）客观下线</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、领导者Sentinel节点选举"><span class="toc-text">3、领导者Sentinel节点选举</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、故障转移"><span class="toc-text">4、故障转移</span></a></li></ol></li></ol>
+	</section>
+</div>
+            
+        </div>
+    </div>
+</section>
+</body>
+<footer class="container">
+    <div class="site-footer" role="contentinfo">
+        <div class="copyright left mobile-block">
+                © 2016
+                <span title="yumemor">yumemor</span>
+                <a href="javascript:window.scrollTo(0,0)" class="right mobile-visible">TOP</a>
+        </div>
+
+        <ul class="site-footer-links right mobile-hidden">
+            <li>
+                <a href="javascript:window.scrollTo(0,0)">TOP</a>
+            </li>
+        </ul>
+
+        <a href="https://github.com/yumemor/hexo-theme-primer" target="_blank" aria-label="view source code">
+            <span class="mega-octicon octicon-mark-github" title="GitHub"></span>
+        </a>
+
+        <ul class="site-footer-links mobile-hidden">
+            
+                  
+                  <li>
+                    <a href="/" title="主页">主页</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/categories/" title="分类">分类</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/message/" title="留言">留言</a>
+                  </li>
+            
+            <li>
+                <a href="/atom.xml">
+                    <span class="octicon octicon-rss" style="color:orange;"></span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</footer>
+
+		<script src="/js/geopattern.js"></script>
+		<script src="/js/highlight.pack.js"></script>
+		<script src="/lib/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
+
+		
+			<script src="/js/toc.js"></script>
+		
+
+		<script src="/js/index.js"></script>
+
+		 <script src="/js/popular_repo.js"></script> 
+
+	

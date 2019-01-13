@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans" prefix="og: http://ogp.me/ns#" class="han-init">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="icon" href="/favicon.ico">
+  
+  <title>李晓杰的个人博客</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox-1.3.4.css">
+  <!--在这里倒入jquery 方便处理部分页面的jquery-->
+  <script src="https://cdn.staticfile.org/jquery/1.7/jquery.min.js" type="text/javascript"></script>
+</head></html>
+
+<body>
+	<header class="site-header navfixed-false">
+  <div class="container">
+      <h1><a href="/" title="李晓杰的个人博客"><span class="octicon octicon-mark-github"></span> 李晓杰的个人博客</a></h1>
+      <nav class="site-header-nav" role="navigation">
+        
+              
+              <a href="/" class=" site-header-nav-item hvr-underline-from-center" title="主页">主页</a>
+        
+              
+              <a href="/categories/" class=" site-header-nav-item hvr-underline-from-center" title="分类">分类</a>
+        
+              
+              <a href="/message/" class=" site-header-nav-item hvr-underline-from-center" title="留言">留言</a>
+        
+      </nav>
+  </div>
+</header>
+
+	
+<section class="collection-head geopattern" data-pattern-id="">
+    <div class="container">
+        <div class="collection-title">
+            <h1 class="collection-header">
+                
+            </h1>
+            
+                <div class="collection-info">
+                    <span class="meta-info">
+                        <span class="octicon octicon-calendar"></span>
+                        <time datetime="2019-01-13T11:02:13.143Z" itemprop="datePublished">2019-01-13</time>
+                    </span>
+                    
+                </div>
+            
+        </div>
+    </div>
+</section>
+	<section class="container">
+    <div class="columns">
+        <div class="column  three-fourths ">
+            <article class="article-content markdown-body">
+                <h1 id="一、内存消耗"><a href="#一、内存消耗" class="headerlink" title="一、内存消耗"></a>一、内存消耗</h1><h2 id="1、内存消耗的划分"><a href="#1、内存消耗的划分" class="headerlink" title="1、内存消耗的划分"></a>1、内存消耗的划分</h2><p>Redis进程内消耗主要包括：自身内存+对象内存+缓冲内存+内存碎片,如下图所示：</p>
+<p><img src="/Users/lixiaojie/github/study/pictures/redis内存消耗划分-1.png.png" alt=""></p>
+<p>1）对象内存是redis内存占用最大的一块，存储着用户所有的数据</p>
+<p>redis所有的数据都是采用k-v数据类型，每次创建键值对时，至少创建两种类型的对象，键对象使用的是字符串，在使用redis时很容易忽略健对内存消耗的影响，应当避免使用过长的键。value对象复杂些，包括五种数据类型。其他数据类型都是建立在这五种数据类型之上实现的，如Bitmaps和HyperLogLog都是使用字符串实现，GEO使用有序集合实现等。</p>
+<p>2）缓冲内存：</p>
+<p>缓冲区内存主要包括<strong>客户端缓冲</strong>、<strong>复制积压区缓冲区</strong>、<strong>AOF缓冲区</strong></p>
+<p><strong>客户端缓冲</strong>指的是所有接入redis服务器的tcp链接的输入输出缓冲。输入缓冲无法控制，最大空间1G，如果超过将断开连接，输出缓冲通过参数client-output-buffer-limit控制</p>
+<p><strong>复制积压缓冲区</strong>整个redis主节点只有一个，所有的从节点共享此缓冲区，因此可以设置较大的缓冲区空间，以防止全量复制</p>
+<p><strong>AOF缓冲区</strong>：这部分空间用于在redis重谢期间保存最近的写入命令。AOF缓冲区用户无法控制，消耗的内存取决于AOF充血时间和写入命令量，这部分空间通常占用很小</p>
+<p>3）内存碎片：</p>
+<p>以下操作会引起高内存碎片问题：</p>
+<p>a、频繁做更新操作</p>
+<p>b、大量过期键删除，键对象过期删除后，释放的空间无法得到充分利用，导致碎片率上升</p>
+<p>高碎片率的常见解决办法：</p>
+<p>a、数据对齐，在条件允许的情况下尽量做数据对齐，比如数据尽量采用数字类型或者固定长度字符串等</p>
+<p>b、安全重启：重启节点可以做到内存碎片重新整理，因此可以利用高可用架构，如Sentinel或Cluster，将碎片率过高的主节点转换为从节点，进行安全重启</p>
+<p>子进程内存消耗</p>
+<p>子进程内存消耗主要指执行AOF/RDB重写时redis创建的子进程内存消耗</p>
+<h1 id="二、内存管理"><a href="#二、内存管理" class="headerlink" title="二、内存管理"></a>二、内存管理</h1><h2 id="1、设置内存上限"><a href="#1、设置内存上限" class="headerlink" title="1、设置内存上限"></a>1、设置内存上限</h2><p>redis可以泗洪maxmemory参数限制最大可用内存。限制内存的主要目的由：<br>1）用于缓存系统，当超出内存上限maxmemory时适用LRU等删除策略释放空间</p>
+<p>2）防止所有内存超过服务器物理内存</p>
+<h2 id="2、动态调整内存上限"><a href="#2、动态调整内存上限" class="headerlink" title="2、动态调整内存上限"></a>2、动态调整内存上限</h2><p>redis的内存上限可以通过<code>config set maxmemory</code>进行动态修改，即修改最大可用内存，通过动态修改内存，可以实现在当前服务器下动态伸缩redis内存的目的</p>
+<p><u>redis默认无限适用服务器内存，为防止极端情况下导致系统内存耗尽，建议所有的redis进程都要配置maxmemory</u></p>
+<h2 id="3、内存回收策略"><a href="#3、内存回收策略" class="headerlink" title="3、内存回收策略"></a>3、内存回收策略</h2><p>redis的内存回收机制主要体现在以下两个方面：</p>
+<ul>
+<li>删除到达过期时间的键对象</li>
+<li>内存使用达到maxmemory上限时触发内存溢出控制策略</li>
+</ul>
+<h3 id="1）删除过期键对象"><a href="#1）删除过期键对象" class="headerlink" title="1）删除过期键对象"></a>1）删除过期键对象</h3><p>​    redis进程内保存大量的键，维护每个键精准的过期删除机制会导致消耗大量的CPU，这对于单线程的redis来说成本过高，因此redis采用惰性删除和定时任务删除机制实现过期键的内存回收</p>
+<p><strong>a、惰性删除：</strong></p>
+<p>惰性删除用于当客户端读取带有超时属性的键时，如果已经超过键设置的过期时间，会执行删除操作并返回空，这种策略处于节省CPU考虑，不需要单独维护TTL链表来处理过期键的删除。但是单独使用这种方式存在内存泄漏的问题，当过期键一致没有访问将无法得到及时删除，从而导致内存不能及时释放，因此，redis提供了另一种定时任务删除机制作为惰性删除的补充</p>
+<p><strong>b、定时任务删除：</strong></p>
+<p>redis内部维护一个定时任务，默认每秒运行10次（可以通过配置hz控制）。定时任务中删除过期键逻辑采用自适应算法，根据键的过期比例，适用快慢两种速率模式回收键，流程如下：</p>
+<p>i、定时任务在每个数据库空间随机检查20个键，当发现键过期时，删除对应的键</p>
+<p>ii、如果超过检查数25%的键过期，循环执行回收逻辑只到不足25%或运行超时为止啊，慢模式下超市时间为25ms</p>
+<p>iii、如果之前回收键逻辑超时，则在redis触发内部事件之前再次以快模式运行回收过期键任务，快模式下超时时间为1ms且2s内只能运行1次</p>
+<p>iv、快慢两种模式内部删除逻辑相同，只是执行的超时时间不同</p>
+<h3 id="2）内存溢出控制策略"><a href="#2）内存溢出控制策略" class="headerlink" title="2）内存溢出控制策略"></a>2）内存溢出控制策略</h3><p>当redis所用内存达到maxmemory上限时会触发相应的溢出控制策略，具体策略手maxmemory-policy参数控制</p>
+<p>redis支持六种策略，如下：</p>
+<p>a、<strong>noeviction</strong>：redis的默认策略，不会删除任何数据，拒绝所有写入操作并返回客户端错误信息，此时redis只响应读操作</p>
+<p>b、<strong>volatile-lru</strong>：根据LRU算法删除设置了超时属性的键，直到腾出足够空间为止。如果没有可删除的键对象，会推倒noeviction策略</p>
+<p>c、<strong>allkeys-lru</strong>：根据LRU算法删除键，不管数据有没有设置超时属性，直到腾出足够空间为止</p>
+<p>d、<strong>allkeys-random</strong>：随机删除所有键，直到腾出足够内存为止</p>
+<p>e、<strong>volatile-random</strong>：随机删除过期键，直到腾出足够内存为止</p>
+<p>f、<strong>volatile-ttl</strong>：根据键值对象的ttl属性，删除最近将要过期的数据。如果没有，回退到noeviction策略</p>
+<h1 id="三、内存优化"><a href="#三、内存优化" class="headerlink" title="三、内存优化"></a>三、内存优化</h1><h2 id="1、redisObject对象"><a href="#1、redisObject对象" class="headerlink" title="1、redisObject对象"></a>1、redisObject对象</h2><p>redis存储的所有值对象在内部定义为redisObject结构体，redis存储的数据都是使用redisObject来封装，包括string、hash、set、zset、list在内的所有数据类型，redisObject对象包括以下几个字段：</p>
+<p>1）type字段：表示当前对象使用的数据类型</p>
+<p>2）encoding字段：表示redis内部编码类型</p>
+<p>3）lru字段：记录对象最后一次被访问的时间，当配置了maxmemory和maxmemory-policy=volatile-lru或者allkeys-lru时，用于辅助LRU算法删除键数据</p>
+<p>4）refcount字段：记录当前对象被引用的次数，用于通过引用次数回收内存，当refcount=0时，可以安全回收当前对象空间</p>
+<p>5）*ptr字段：与对象的数据内容有关，如果时证书，直接存储数据；否则表示指向数据的指针</p>
+<h2 id="2、缩减键值对象"><a href="#2、缩减键值对象" class="headerlink" title="2、缩减键值对象"></a>2、缩减键值对象</h2><p> 降低redis内存使用最直接的方式就是缩减键和值的长度</p>
+<ul>
+<li>key长度：在设计键时，在完整描述业务情况下，key越短越好</li>
+<li>value长度：可以把业务对象序列化成二进制数组放入缓存中，但是在使用的过程中要考虑频繁压缩解压计算所带来的开销成本</li>
+</ul>
+<h2 id="3、共享对象池"><a href="#3、共享对象池" class="headerlink" title="3、共享对象池"></a>3、共享对象池</h2><p>共享对象池是指redis内部维护[0-9999]的整数对象池</p>
+<p>当设置maxmemory并启用LRU相关淘汰策略时redis禁止使用共享对象池。LRU算法需要获取对象最后被访问的时间，以便淘汰最长未访问的数据，每个对象最后访问时间存储在redisObject对象的lru字段。对象共享意味着多个引用共享同一个redisObject，这时lru字段也会被共享，导致无法获取每个对象的最后访问时间。如果没有设置maxmemory，直到内存被用尽redis也不会出发内存回收，所以共享对象池可以工作</p>
+<p>为什么只有整数共享对象池？</p>
+<p>首先整数对象复用的几率大，其次对象共享的一个关键操作就是判断相等性，redis之所以只有整数对象池，是因为整数比较算法的时间复杂度为<em>O(1)</em>,只保留一万个整数位了防止对象池浪费。</p>
+<h2 id="4、字符串优化"><a href="#4、字符串优化" class="headerlink" title="4、字符串优化"></a>4、字符串优化</h2><p>//</p>
+<h2 id="5、控制键的数量"><a href="#5、控制键的数量" class="headerlink" title="5、控制键的数量"></a>5、控制键的数量</h2>
+            </article>
+            
+                <div class="share">
+                    <!--开启分享-->
+<div class="share-component" data-disabled="google,twitter,facebook" data-description=""></div>
+
+<script src="/js/share.min.js"></script>
+
+                </div>    
+            
+
+            
+            
+                
+<div class="comments">
+    <div id="container"></div>
+        <script src="/js/gitment.browser.js"></script>
+         <script>
+            var gitment = new Gitment({
+                id: '/2019/01/13/redis/redis学习之理解内存/',
+                owner: '',
+                repo: '',
+                oauth: {
+                    client_id: "",
+                    client_secret: "",
+                }
+            })
+        gitment.render('container')
+        </script>
+</div>
+
+            
+
+        </div>
+        <div class="column one-fourth">
+            
+                
+                
+
+
+<h3>Post Directory</h3>
+
+<div id="post-directory-module">
+	<section class="post-directory">
+		<p><strong class="toc-title">文章目录</strong></p>
+		<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一、内存消耗"><span class="toc-text">一、内存消耗</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、内存消耗的划分"><span class="toc-text">1、内存消耗的划分</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#二、内存管理"><span class="toc-text">二、内存管理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、设置内存上限"><span class="toc-text">1、设置内存上限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、动态调整内存上限"><span class="toc-text">2、动态调整内存上限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、内存回收策略"><span class="toc-text">3、内存回收策略</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1）删除过期键对象"><span class="toc-text">1）删除过期键对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2）内存溢出控制策略"><span class="toc-text">2）内存溢出控制策略</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#三、内存优化"><span class="toc-text">三、内存优化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1、redisObject对象"><span class="toc-text">1、redisObject对象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2、缩减键值对象"><span class="toc-text">2、缩减键值对象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3、共享对象池"><span class="toc-text">3、共享对象池</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4、字符串优化"><span class="toc-text">4、字符串优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5、控制键的数量"><span class="toc-text">5、控制键的数量</span></a></li></ol></li></ol>
+	</section>
+</div>
+            
+        </div>
+    </div>
+</section>
+</body>
+<footer class="container">
+    <div class="site-footer" role="contentinfo">
+        <div class="copyright left mobile-block">
+                © 2016
+                <span title="yumemor">yumemor</span>
+                <a href="javascript:window.scrollTo(0,0)" class="right mobile-visible">TOP</a>
+        </div>
+
+        <ul class="site-footer-links right mobile-hidden">
+            <li>
+                <a href="javascript:window.scrollTo(0,0)">TOP</a>
+            </li>
+        </ul>
+
+        <a href="https://github.com/yumemor/hexo-theme-primer" target="_blank" aria-label="view source code">
+            <span class="mega-octicon octicon-mark-github" title="GitHub"></span>
+        </a>
+
+        <ul class="site-footer-links mobile-hidden">
+            
+                  
+                  <li>
+                    <a href="/" title="主页">主页</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/categories/" title="分类">分类</a>
+                  </li>
+            
+                  
+                  <li>
+                    <a href="/message/" title="留言">留言</a>
+                  </li>
+            
+            <li>
+                <a href="/atom.xml">
+                    <span class="octicon octicon-rss" style="color:orange;"></span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</footer>
+
+		<script src="/js/geopattern.js"></script>
+		<script src="/js/highlight.pack.js"></script>
+		<script src="/lib/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
+
+		
+			<script src="/js/toc.js"></script>
+		
+
+		<script src="/js/index.js"></script>
+
+		 <script src="/js/popular_repo.js"></script> 
+
+	
