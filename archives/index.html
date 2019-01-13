@@ -24,7 +24,7 @@
               <a href="/" class=" site-header-nav-item hvr-underline-from-center" title="主页">主页</a>
         
               
-              <a href="/categories/" class=" site-header-nav-item hvr-underline-from-center" title="分类">分类</a>
+              <a href="/category/" target="true" class=" site-header-nav-item hvr-underline-from-center" title="分类">分类</a>
         
               
               <a href="/message/" class=" site-header-nav-item hvr-underline-from-center" title="留言">留言</a>
@@ -78,6 +78,10 @@
     <div class="repo-list-item">
       <h3 class="repo-list-name" itemprop="name">
         
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之慢查询分析/">redis学习之慢查询分析.md</a>
+  
+
       </h3>
       <div class="repo-list-description">
         
@@ -345,7 +349,210 @@ getradiusbymember key member longitude latitude radiusm|km|ft|mi [withcoord] [wi
       <p class="repo-list-meta">
         <span class="meta-info">
           <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.144Z" itemprop="datePublished">2019-01-13</time>
+           <time datetime="2019-01-13T11:23:02.295Z" itemprop="datePublished">2019-01-13</time>
+        </span>
+
+        
+      
+        <!--
+          
+        -->
+
+      </p>
+    </div>
+  </article>
+            
+                  <article id="post-redis/redis学习之缓存设计" class="repo-list">
+    <div class="repo-list-item">
+      <h3 class="repo-list-name" itemprop="name">
+        
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之缓存设计/">redis学习之缓存设计.md</a>
+  
+
+      </h3>
+      <div class="repo-list-description">
+        
+          <h1 id="一、缓存的收益和成本"><a href="#一、缓存的收益和成本" class="headerlink" title="一、缓存的收益和成本"></a><strong>一</strong>、缓存的收益和成本</h1><h2 id="1、缓存的收益"><a href="#1、缓存的收益" class="headerlink" title="1、缓存的收益"></a>1、缓存的收益</h2><p>1）加速读写</p>
+<p>2、降低后端负载</p>
+<h2 id="2、成本"><a href="#2、成本" class="headerlink" title="2、成本"></a>2、成本</h2><p>1）数据不一致性</p>
+<p>2）代码维护成本</p>
+<p>3）运维成本</p>
+<h2 id="3、使用场景"><a href="#3、使用场景" class="headerlink" title="3、使用场景"></a>3、使用场景</h2><p>1）开销大的复杂计算</p>
+<p>2、加速请求响应：redis每秒可以完成几万次的读写，并且提供的批量操作可以优化整个IO链的响应时间</p>
+<h1 id="二、缓存更新策略"><a href="#二、缓存更新策略" class="headerlink" title="二、缓存更新策略"></a>二、缓存更新策略</h1><h2 id="1、LRU-LFU-FIFO算法剔除"><a href="#1、LRU-LFU-FIFO算法剔除" class="headerlink" title="1、LRU/LFU/FIFO算法剔除"></a>1、LRU/LFU/FIFO算法剔除</h2><p><strong>使用场景：</strong>通常用于缓存使用量超过了预设的最大值的时候</p>
+<p><strong>一致性：</strong>最差</p>
+<p><strong>维护成本：</strong>只需要配置maxmemory和对应的策略即可</p>
+<h2 id="2、超时剔除"><a href="#2、超时剔除" class="headerlink" title="2、超时剔除"></a>2、超时剔除</h2><p><strong>使用场景：</strong>如果业务可以容忍一段时间内，缓存层数据和存储层数据不一致，那么可以设置过期时间。在数据过期后，再从真实数据源获取数据，重新放到缓存病设置过期时间</p>
+<p><strong>一致性：</strong>一段时间窗口内存在一致性问题</p>
+<p><strong>维护成本：</strong>较低，只需要设置expire过期时间即可</p>
+<h2 id="3、主动更新"><a href="#3、主动更新" class="headerlink" title="3、主动更新"></a>3、主动更新</h2><p><strong>使用场景：</strong>应用方对于数据的一致性要求较高，需要在真实数据更新后，立即更新缓存数据</p>
+<p><strong>一致性：</strong>一致性最高，但如果主动更新发生了问题，那么这条数据很可能很长时间不会更新，所以建议结合超市剔除一起使用效果会更好</p>
+<p><strong>维护成本：</strong>维护成本比较高，开发需要自己来完成更新，病保证更新操作的正确性</p>
+<h2 id="4、最佳实践"><a href="#4、最佳实践" class="headerlink" title="4、最佳实践"></a>4、最佳实践</h2><ul>
+<li>低一致性业务建议配置最大内存和淘汰策略方式使用</li>
+<li>高一致性业务可以结合使用超时剔除和主动更新，这样即使更新出了问题，也能保证数据过期时间后删除脏数据</li>
+</ul>
+<h1 id="二、穿透优化"><a href="#二、穿透优化" class="headerlink" title="二、穿透优化"></a>二、穿透优化</h1><p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层</p>
+<p>造成缓存穿透的原因有两个</p>
+<ul>
+<li>自身业务代码或者数据出现问题</li>
+<li>一些恶意攻击、爬虫等造成大量空命中</li>
+</ul>
+<p>解决缓存穿透问题的几个方案：</p>
+<p><strong>1、缓存空对象：</strong>如果存储层不命中，则仍然将空对象保留到缓存层中，之后再访问这个数据将会从缓存中获取，这样就保护了后端数据源</p>
+<p>缓存空对象会有连个问题：</p>
+<ul>
+<li>空值做了缓存，意味着缓存层中存了更多的键，需要更多的内存空间（如果是攻击，问题更严重），比较有效的方法是针对这类数据设置一个较短的过期时间，让其自动剔除</li>
+<li>缓存层和存储层的数据会有一段时间窗口不一致，可能会对业务有一定的影响</li>
+</ul>
+<p><strong>2、布隆过滤器拦截：</strong>在访问缓存层和存储层之前，讲存在的key用布隆过滤器提前保存起来，做一层拦截，redis可以利用Bitmaps实现布隆过滤器</p>
+<p>这种方式适用于数据命中不高，数据相对固定，实时性较低的应用场景，代码维护较为复杂，但是缓存空间占用小</p>
+<h1 id="三、无底洞优化"><a href="#三、无底洞优化" class="headerlink" title="三、无底洞优化"></a>三、无底洞优化</h1><p>所谓无底洞，就是说投入的越多不一定产出越多</p>
+<h2 id="1、常见的IO优化思路"><a href="#1、常见的IO优化思路" class="headerlink" title="1、常见的IO优化思路"></a>1、常见的IO优化思路</h2><ul>
+<li>命令本身的优化，例如优化SQL语句</li>
+<li>减少网络通信次数</li>
+<li>降低接入成本，例如客户端使用长连接/连接池、NIO等</li>
+</ul>
+<p><strong>几种批量操作解决方案对比</strong></p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>优点</th>
+<th>缺点</th>
+<th>网络IO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>串行命令</td>
+<td>1）编程简单<br>2)如果少量 keys，性能可以满徐需求</td>
+<td>大量keys请求延迟严重</td>
+<td><em>O</em>(keys)</td>
+</tr>
+<tr>
+<td>串行IO</td>
+<td>1）编程简单<br>2）少量节点，性能满足需求</td>
+<td>大量node延迟严重</td>
+<td><em>O</em>(nodes)</td>
+</tr>
+<tr>
+<td>并行IO</td>
+<td>利用并行特性，延迟取决于最慢的节点</td>
+<td>1）编程复杂<br>2）由于多线程，问题定位可能较难</td>
+<td><em>O</em>(max_slow(nodes))</td>
+</tr>
+<tr>
+<td>hash_tag</td>
+<td>性能最高</td>
+<td>1）业务维护成本较高<br>2）容易出现数据倾斜</td>
+<td><em>O</em>(1)</td>
+</tr>
+</tbody>
+</table>
+<h1 id="四、雪崩优化"><a href="#四、雪崩优化" class="headerlink" title="四、雪崩优化"></a>四、雪崩优化</h1><p>由于缓存层承载着大量请求，有效地保护了存储层，但是如果缓存层由于某些原因不能提供服务，于是所有的请求都会达到存储层，存储层的调用量会暴增，造成存储层也会级联当即的情况</p>
+<p>预防和解决缓存雪崩的问题，可以从以下几方面着手：</p>
+<p>1、保证缓存层服务的高可用性</p>
+<p>2、依赖隔离组件为后端限流并降级</p>
+<p>3、提前演练</p>
+
+        
+      </div>
+      <p class="repo-list-meta">
+        <span class="meta-info">
+          <span class="octicon octicon-calendar"></span>
+           <time datetime="2019-01-13T11:22:42.579Z" itemprop="datePublished">2019-01-13</time>
+        </span>
+
+        
+      
+        <!--
+          
+        -->
+
+      </p>
+    </div>
+  </article>
+            
+                  <article id="post-redis/redis学习之理解内存" class="repo-list">
+    <div class="repo-list-item">
+      <h3 class="repo-list-name" itemprop="name">
+        
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之理解内存/">redis学习之理解内存.md</a>
+  
+
+      </h3>
+      <div class="repo-list-description">
+        
+          <h1 id="一、内存消耗"><a href="#一、内存消耗" class="headerlink" title="一、内存消耗"></a>一、内存消耗</h1><h2 id="1、内存消耗的划分"><a href="#1、内存消耗的划分" class="headerlink" title="1、内存消耗的划分"></a>1、内存消耗的划分</h2><p>Redis进程内消耗主要包括：自身内存+对象内存+缓冲内存+内存碎片,如下图所示：</p>
+<p><img src="/Users/lixiaojie/github/study/pictures/redis内存消耗划分-1.png.png" alt=""></p>
+<p>1）对象内存是redis内存占用最大的一块，存储着用户所有的数据</p>
+<p>redis所有的数据都是采用k-v数据类型，每次创建键值对时，至少创建两种类型的对象，键对象使用的是字符串，在使用redis时很容易忽略健对内存消耗的影响，应当避免使用过长的键。value对象复杂些，包括五种数据类型。其他数据类型都是建立在这五种数据类型之上实现的，如Bitmaps和HyperLogLog都是使用字符串实现，GEO使用有序集合实现等。</p>
+<p>2）缓冲内存：</p>
+<p>缓冲区内存主要包括<strong>客户端缓冲</strong>、<strong>复制积压区缓冲区</strong>、<strong>AOF缓冲区</strong></p>
+<p><strong>客户端缓冲</strong>指的是所有接入redis服务器的tcp链接的输入输出缓冲。输入缓冲无法控制，最大空间1G，如果超过将断开连接，输出缓冲通过参数client-output-buffer-limit控制</p>
+<p><strong>复制积压缓冲区</strong>整个redis主节点只有一个，所有的从节点共享此缓冲区，因此可以设置较大的缓冲区空间，以防止全量复制</p>
+<p><strong>AOF缓冲区</strong>：这部分空间用于在redis重谢期间保存最近的写入命令。AOF缓冲区用户无法控制，消耗的内存取决于AOF充血时间和写入命令量，这部分空间通常占用很小</p>
+<p>3）内存碎片：</p>
+<p>以下操作会引起高内存碎片问题：</p>
+<p>a、频繁做更新操作</p>
+<p>b、大量过期键删除，键对象过期删除后，释放的空间无法得到充分利用，导致碎片率上升</p>
+<p>高碎片率的常见解决办法：</p>
+<p>a、数据对齐，在条件允许的情况下尽量做数据对齐，比如数据尽量采用数字类型或者固定长度字符串等</p>
+<p>b、安全重启：重启节点可以做到内存碎片重新整理，因此可以利用高可用架构，如Sentinel或Cluster，将碎片率过高的主节点转换为从节点，进行安全重启</p>
+<p>子进程内存消耗</p>
+<p>子进程内存消耗主要指执行AOF/RDB重写时redis创建的子进程内存消耗</p>
+<h1 id="二、内存管理"><a href="#二、内存管理" class="headerlink" title="二、内存管理"></a>二、内存管理</h1><h2 id="1、设置内存上限"><a href="#1、设置内存上限" class="headerlink" title="1、设置内存上限"></a>1、设置内存上限</h2><p>redis可以泗洪maxmemory参数限制最大可用内存。限制内存的主要目的由：<br>1）用于缓存系统，当超出内存上限maxmemory时适用LRU等删除策略释放空间</p>
+<p>2）防止所有内存超过服务器物理内存</p>
+<h2 id="2、动态调整内存上限"><a href="#2、动态调整内存上限" class="headerlink" title="2、动态调整内存上限"></a>2、动态调整内存上限</h2><p>redis的内存上限可以通过<code>config set maxmemory</code>进行动态修改，即修改最大可用内存，通过动态修改内存，可以实现在当前服务器下动态伸缩redis内存的目的</p>
+<p><u>redis默认无限适用服务器内存，为防止极端情况下导致系统内存耗尽，建议所有的redis进程都要配置maxmemory</u></p>
+<h2 id="3、内存回收策略"><a href="#3、内存回收策略" class="headerlink" title="3、内存回收策略"></a>3、内存回收策略</h2><p>redis的内存回收机制主要体现在以下两个方面：</p>
+<ul>
+<li>删除到达过期时间的键对象</li>
+<li>内存使用达到maxmemory上限时触发内存溢出控制策略</li>
+</ul>
+<h3 id="1）删除过期键对象"><a href="#1）删除过期键对象" class="headerlink" title="1）删除过期键对象"></a>1）删除过期键对象</h3><p>​    redis进程内保存大量的键，维护每个键精准的过期删除机制会导致消耗大量的CPU，这对于单线程的redis来说成本过高，因此redis采用惰性删除和定时任务删除机制实现过期键的内存回收</p>
+<p><strong>a、惰性删除：</strong></p>
+<p>惰性删除用于当客户端读取带有超时属性的键时，如果已经超过键设置的过期时间，会执行删除操作并返回空，这种策略处于节省CPU考虑，不需要单独维护TTL链表来处理过期键的删除。但是单独使用这种方式存在内存泄漏的问题，当过期键一致没有访问将无法得到及时删除，从而导致内存不能及时释放，因此，redis提供了另一种定时任务删除机制作为惰性删除的补充</p>
+<p><strong>b、定时任务删除：</strong></p>
+<p>redis内部维护一个定时任务，默认每秒运行10次（可以通过配置hz控制）。定时任务中删除过期键逻辑采用自适应算法，根据键的过期比例，适用快慢两种速率模式回收键，流程如下：</p>
+<p>i、定时任务在每个数据库空间随机检查20个键，当发现键过期时，删除对应的键</p>
+<p>ii、如果超过检查数25%的键过期，循环执行回收逻辑只到不足25%或运行超时为止啊，慢模式下超市时间为25ms</p>
+<p>iii、如果之前回收键逻辑超时，则在redis触发内部事件之前再次以快模式运行回收过期键任务，快模式下超时时间为1ms且2s内只能运行1次</p>
+<p>iv、快慢两种模式内部删除逻辑相同，只是执行的超时时间不同</p>
+<h3 id="2）内存溢出控制策略"><a href="#2）内存溢出控制策略" class="headerlink" title="2）内存溢出控制策略"></a>2）内存溢出控制策略</h3><p>当redis所用内存达到maxmemory上限时会触发相应的溢出控制策略，具体策略手maxmemory-policy参数控制</p>
+<p>redis支持六种策略，如下：</p>
+<p>a、<strong>noeviction</strong>：redis的默认策略，不会删除任何数据，拒绝所有写入操作并返回客户端错误信息，此时redis只响应读操作</p>
+<p>b、<strong>volatile-lru</strong>：根据LRU算法删除设置了超时属性的键，直到腾出足够空间为止。如果没有可删除的键对象，会推倒noeviction策略</p>
+<p>c、<strong>allkeys-lru</strong>：根据LRU算法删除键，不管数据有没有设置超时属性，直到腾出足够空间为止</p>
+<p>d、<strong>allkeys-random</strong>：随机删除所有键，直到腾出足够内存为止</p>
+<p>e、<strong>volatile-random</strong>：随机删除过期键，直到腾出足够内存为止</p>
+<p>f、<strong>volatile-ttl</strong>：根据键值对象的ttl属性，删除最近将要过期的数据。如果没有，回退到noeviction策略</p>
+<h1 id="三、内存优化"><a href="#三、内存优化" class="headerlink" title="三、内存优化"></a>三、内存优化</h1><h2 id="1、redisObject对象"><a href="#1、redisObject对象" class="headerlink" title="1、redisObject对象"></a>1、redisObject对象</h2><p>redis存储的所有值对象在内部定义为redisObject结构体，redis存储的数据都是使用redisObject来封装，包括string、hash、set、zset、list在内的所有数据类型，redisObject对象包括以下几个字段：</p>
+<p>1）type字段：表示当前对象使用的数据类型</p>
+<p>2）encoding字段：表示redis内部编码类型</p>
+<p>3）lru字段：记录对象最后一次被访问的时间，当配置了maxmemory和maxmemory-policy=volatile-lru或者allkeys-lru时，用于辅助LRU算法删除键数据</p>
+<p>4）refcount字段：记录当前对象被引用的次数，用于通过引用次数回收内存，当refcount=0时，可以安全回收当前对象空间</p>
+<p>5）*ptr字段：与对象的数据内容有关，如果时证书，直接存储数据；否则表示指向数据的指针</p>
+<h2 id="2、缩减键值对象"><a href="#2、缩减键值对象" class="headerlink" title="2、缩减键值对象"></a>2、缩减键值对象</h2><p> 降低redis内存使用最直接的方式就是缩减键和值的长度</p>
+<ul>
+<li>key长度：在设计键时，在完整描述业务情况下，key越短越好</li>
+<li>value长度：可以把业务对象序列化成二进制数组放入缓存中，但是在使用的过程中要考虑频繁压缩解压计算所带来的开销成本</li>
+</ul>
+<h2 id="3、共享对象池"><a href="#3、共享对象池" class="headerlink" title="3、共享对象池"></a>3、共享对象池</h2><p>共享对象池是指redis内部维护[0-9999]的整数对象池</p>
+<p>当设置maxmemory并启用LRU相关淘汰策略时redis禁止使用共享对象池。LRU算法需要获取对象最后被访问的时间，以便淘汰最长未访问的数据，每个对象最后访问时间存储在redisObject对象的lru字段。对象共享意味着多个引用共享同一个redisObject，这时lru字段也会被共享，导致无法获取每个对象的最后访问时间。如果没有设置maxmemory，直到内存被用尽redis也不会出发内存回收，所以共享对象池可以工作</p>
+<p>为什么只有整数共享对象池？</p>
+<p>首先整数对象复用的几率大，其次对象共享的一个关键操作就是判断相等性，redis之所以只有整数对象池，是因为整数比较算法的时间复杂度为<em>O(1)</em>,只保留一万个整数位了防止对象池浪费。</p>
+<h2 id="4、字符串优化"><a href="#4、字符串优化" class="headerlink" title="4、字符串优化"></a>4、字符串优化</h2><p>//</p>
+<h2 id="5、控制键的数量"><a href="#5、控制键的数量" class="headerlink" title="5、控制键的数量"></a>5、控制键的数量</h2>
+        
+      </div>
+      <p class="repo-list-meta">
+        <span class="meta-info">
+          <span class="octicon octicon-calendar"></span>
+           <time datetime="2019-01-13T11:22:23.172Z" itemprop="datePublished">2019-01-13</time>
         </span>
 
         
@@ -362,6 +569,10 @@ getradiusbymember key member longitude latitude radiusm|km|ft|mi [withcoord] [wi
     <div class="repo-list-item">
       <h3 class="repo-list-name" itemprop="name">
         
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之持久化/">redis学习之持久化.md</a>
+  
+
       </h3>
       <div class="repo-list-description">
         
@@ -450,93 +661,7 @@ getradiusbymember key member longitude latitude radiusm|km|ft|mi [withcoord] [wi
       <p class="repo-list-meta">
         <span class="meta-info">
           <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.143Z" itemprop="datePublished">2019-01-13</time>
-        </span>
-
-        
-      
-        <!--
-          
-        -->
-
-      </p>
-    </div>
-  </article>
-            
-                  <article id="post-redis/redis学习之理解内存" class="repo-list">
-    <div class="repo-list-item">
-      <h3 class="repo-list-name" itemprop="name">
-        
-      </h3>
-      <div class="repo-list-description">
-        
-          <h1 id="一、内存消耗"><a href="#一、内存消耗" class="headerlink" title="一、内存消耗"></a>一、内存消耗</h1><h2 id="1、内存消耗的划分"><a href="#1、内存消耗的划分" class="headerlink" title="1、内存消耗的划分"></a>1、内存消耗的划分</h2><p>Redis进程内消耗主要包括：自身内存+对象内存+缓冲内存+内存碎片,如下图所示：</p>
-<p><img src="/Users/lixiaojie/github/study/pictures/redis内存消耗划分-1.png.png" alt=""></p>
-<p>1）对象内存是redis内存占用最大的一块，存储着用户所有的数据</p>
-<p>redis所有的数据都是采用k-v数据类型，每次创建键值对时，至少创建两种类型的对象，键对象使用的是字符串，在使用redis时很容易忽略健对内存消耗的影响，应当避免使用过长的键。value对象复杂些，包括五种数据类型。其他数据类型都是建立在这五种数据类型之上实现的，如Bitmaps和HyperLogLog都是使用字符串实现，GEO使用有序集合实现等。</p>
-<p>2）缓冲内存：</p>
-<p>缓冲区内存主要包括<strong>客户端缓冲</strong>、<strong>复制积压区缓冲区</strong>、<strong>AOF缓冲区</strong></p>
-<p><strong>客户端缓冲</strong>指的是所有接入redis服务器的tcp链接的输入输出缓冲。输入缓冲无法控制，最大空间1G，如果超过将断开连接，输出缓冲通过参数client-output-buffer-limit控制</p>
-<p><strong>复制积压缓冲区</strong>整个redis主节点只有一个，所有的从节点共享此缓冲区，因此可以设置较大的缓冲区空间，以防止全量复制</p>
-<p><strong>AOF缓冲区</strong>：这部分空间用于在redis重谢期间保存最近的写入命令。AOF缓冲区用户无法控制，消耗的内存取决于AOF充血时间和写入命令量，这部分空间通常占用很小</p>
-<p>3）内存碎片：</p>
-<p>以下操作会引起高内存碎片问题：</p>
-<p>a、频繁做更新操作</p>
-<p>b、大量过期键删除，键对象过期删除后，释放的空间无法得到充分利用，导致碎片率上升</p>
-<p>高碎片率的常见解决办法：</p>
-<p>a、数据对齐，在条件允许的情况下尽量做数据对齐，比如数据尽量采用数字类型或者固定长度字符串等</p>
-<p>b、安全重启：重启节点可以做到内存碎片重新整理，因此可以利用高可用架构，如Sentinel或Cluster，将碎片率过高的主节点转换为从节点，进行安全重启</p>
-<p>子进程内存消耗</p>
-<p>子进程内存消耗主要指执行AOF/RDB重写时redis创建的子进程内存消耗</p>
-<h1 id="二、内存管理"><a href="#二、内存管理" class="headerlink" title="二、内存管理"></a>二、内存管理</h1><h2 id="1、设置内存上限"><a href="#1、设置内存上限" class="headerlink" title="1、设置内存上限"></a>1、设置内存上限</h2><p>redis可以泗洪maxmemory参数限制最大可用内存。限制内存的主要目的由：<br>1）用于缓存系统，当超出内存上限maxmemory时适用LRU等删除策略释放空间</p>
-<p>2）防止所有内存超过服务器物理内存</p>
-<h2 id="2、动态调整内存上限"><a href="#2、动态调整内存上限" class="headerlink" title="2、动态调整内存上限"></a>2、动态调整内存上限</h2><p>redis的内存上限可以通过<code>config set maxmemory</code>进行动态修改，即修改最大可用内存，通过动态修改内存，可以实现在当前服务器下动态伸缩redis内存的目的</p>
-<p><u>redis默认无限适用服务器内存，为防止极端情况下导致系统内存耗尽，建议所有的redis进程都要配置maxmemory</u></p>
-<h2 id="3、内存回收策略"><a href="#3、内存回收策略" class="headerlink" title="3、内存回收策略"></a>3、内存回收策略</h2><p>redis的内存回收机制主要体现在以下两个方面：</p>
-<ul>
-<li>删除到达过期时间的键对象</li>
-<li>内存使用达到maxmemory上限时触发内存溢出控制策略</li>
-</ul>
-<h3 id="1）删除过期键对象"><a href="#1）删除过期键对象" class="headerlink" title="1）删除过期键对象"></a>1）删除过期键对象</h3><p>​    redis进程内保存大量的键，维护每个键精准的过期删除机制会导致消耗大量的CPU，这对于单线程的redis来说成本过高，因此redis采用惰性删除和定时任务删除机制实现过期键的内存回收</p>
-<p><strong>a、惰性删除：</strong></p>
-<p>惰性删除用于当客户端读取带有超时属性的键时，如果已经超过键设置的过期时间，会执行删除操作并返回空，这种策略处于节省CPU考虑，不需要单独维护TTL链表来处理过期键的删除。但是单独使用这种方式存在内存泄漏的问题，当过期键一致没有访问将无法得到及时删除，从而导致内存不能及时释放，因此，redis提供了另一种定时任务删除机制作为惰性删除的补充</p>
-<p><strong>b、定时任务删除：</strong></p>
-<p>redis内部维护一个定时任务，默认每秒运行10次（可以通过配置hz控制）。定时任务中删除过期键逻辑采用自适应算法，根据键的过期比例，适用快慢两种速率模式回收键，流程如下：</p>
-<p>i、定时任务在每个数据库空间随机检查20个键，当发现键过期时，删除对应的键</p>
-<p>ii、如果超过检查数25%的键过期，循环执行回收逻辑只到不足25%或运行超时为止啊，慢模式下超市时间为25ms</p>
-<p>iii、如果之前回收键逻辑超时，则在redis触发内部事件之前再次以快模式运行回收过期键任务，快模式下超时时间为1ms且2s内只能运行1次</p>
-<p>iv、快慢两种模式内部删除逻辑相同，只是执行的超时时间不同</p>
-<h3 id="2）内存溢出控制策略"><a href="#2）内存溢出控制策略" class="headerlink" title="2）内存溢出控制策略"></a>2）内存溢出控制策略</h3><p>当redis所用内存达到maxmemory上限时会触发相应的溢出控制策略，具体策略手maxmemory-policy参数控制</p>
-<p>redis支持六种策略，如下：</p>
-<p>a、<strong>noeviction</strong>：redis的默认策略，不会删除任何数据，拒绝所有写入操作并返回客户端错误信息，此时redis只响应读操作</p>
-<p>b、<strong>volatile-lru</strong>：根据LRU算法删除设置了超时属性的键，直到腾出足够空间为止。如果没有可删除的键对象，会推倒noeviction策略</p>
-<p>c、<strong>allkeys-lru</strong>：根据LRU算法删除键，不管数据有没有设置超时属性，直到腾出足够空间为止</p>
-<p>d、<strong>allkeys-random</strong>：随机删除所有键，直到腾出足够内存为止</p>
-<p>e、<strong>volatile-random</strong>：随机删除过期键，直到腾出足够内存为止</p>
-<p>f、<strong>volatile-ttl</strong>：根据键值对象的ttl属性，删除最近将要过期的数据。如果没有，回退到noeviction策略</p>
-<h1 id="三、内存优化"><a href="#三、内存优化" class="headerlink" title="三、内存优化"></a>三、内存优化</h1><h2 id="1、redisObject对象"><a href="#1、redisObject对象" class="headerlink" title="1、redisObject对象"></a>1、redisObject对象</h2><p>redis存储的所有值对象在内部定义为redisObject结构体，redis存储的数据都是使用redisObject来封装，包括string、hash、set、zset、list在内的所有数据类型，redisObject对象包括以下几个字段：</p>
-<p>1）type字段：表示当前对象使用的数据类型</p>
-<p>2）encoding字段：表示redis内部编码类型</p>
-<p>3）lru字段：记录对象最后一次被访问的时间，当配置了maxmemory和maxmemory-policy=volatile-lru或者allkeys-lru时，用于辅助LRU算法删除键数据</p>
-<p>4）refcount字段：记录当前对象被引用的次数，用于通过引用次数回收内存，当refcount=0时，可以安全回收当前对象空间</p>
-<p>5）*ptr字段：与对象的数据内容有关，如果时证书，直接存储数据；否则表示指向数据的指针</p>
-<h2 id="2、缩减键值对象"><a href="#2、缩减键值对象" class="headerlink" title="2、缩减键值对象"></a>2、缩减键值对象</h2><p> 降低redis内存使用最直接的方式就是缩减键和值的长度</p>
-<ul>
-<li>key长度：在设计键时，在完整描述业务情况下，key越短越好</li>
-<li>value长度：可以把业务对象序列化成二进制数组放入缓存中，但是在使用的过程中要考虑频繁压缩解压计算所带来的开销成本</li>
-</ul>
-<h2 id="3、共享对象池"><a href="#3、共享对象池" class="headerlink" title="3、共享对象池"></a>3、共享对象池</h2><p>共享对象池是指redis内部维护[0-9999]的整数对象池</p>
-<p>当设置maxmemory并启用LRU相关淘汰策略时redis禁止使用共享对象池。LRU算法需要获取对象最后被访问的时间，以便淘汰最长未访问的数据，每个对象最后访问时间存储在redisObject对象的lru字段。对象共享意味着多个引用共享同一个redisObject，这时lru字段也会被共享，导致无法获取每个对象的最后访问时间。如果没有设置maxmemory，直到内存被用尽redis也不会出发内存回收，所以共享对象池可以工作</p>
-<p>为什么只有整数共享对象池？</p>
-<p>首先整数对象复用的几率大，其次对象共享的一个关键操作就是判断相等性，redis之所以只有整数对象池，是因为整数比较算法的时间复杂度为<em>O(1)</em>,只保留一万个整数位了防止对象池浪费。</p>
-<h2 id="4、字符串优化"><a href="#4、字符串优化" class="headerlink" title="4、字符串优化"></a>4、字符串优化</h2><p>//</p>
-<h2 id="5、控制键的数量"><a href="#5、控制键的数量" class="headerlink" title="5、控制键的数量"></a>5、控制键的数量</h2>
-        
-      </div>
-      <p class="repo-list-meta">
-        <span class="meta-info">
-          <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.143Z" itemprop="datePublished">2019-01-13</time>
+           <time datetime="2019-01-13T11:21:59.951Z" itemprop="datePublished">2019-01-13</time>
         </span>
 
         
@@ -553,6 +678,10 @@ getradiusbymember key member longitude latitude radiusm|km|ft|mi [withcoord] [wi
     <div class="repo-list-item">
       <h3 class="repo-list-name" itemprop="name">
         
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之客户端/">redis学习之客户端.md</a>
+  
+
       </h3>
       <div class="repo-list-description">
         
@@ -598,118 +727,7 @@ getradiusbymember key member longitude latitude radiusm|km|ft|mi [withcoord] [wi
       <p class="repo-list-meta">
         <span class="meta-info">
           <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.142Z" itemprop="datePublished">2019-01-13</time>
-        </span>
-
-        
-      
-        <!--
-          
-        -->
-
-      </p>
-    </div>
-  </article>
-            
-                  <article id="post-redis/redis学习之复制" class="repo-list">
-    <div class="repo-list-item">
-      <h3 class="repo-list-name" itemprop="name">
-        
-      </h3>
-      <div class="repo-list-description">
-        
-          
-        
-      </div>
-      <p class="repo-list-meta">
-        <span class="meta-info">
-          <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.141Z" itemprop="datePublished">2019-01-13</time>
-        </span>
-
-        
-      
-        <!--
-          
-        -->
-
-      </p>
-    </div>
-  </article>
-            
-                  <article id="post-redis/redis学习之集群" class="repo-list">
-    <div class="repo-list-item">
-      <h3 class="repo-list-name" itemprop="name">
-        
-      </h3>
-      <div class="repo-list-description">
-        
-          <h1 id="一、数据分布"><a href="#一、数据分布" class="headerlink" title="一、数据分布"></a>一、数据分布</h1><p>分布式数据库首先要解决的是要把整个数据集按照分区规则映射到多个节点的问题，即把数据集划分到多个节点上，每个节点负责整体数据的一个子集。常见的分区规则有哈希分区和顺序分区两种。Redis采用的是哈希分区</p>
-<p>哈希分区一般分为以下几种：</p>
-<p>1、节点取余分区：</p>
-<p>使用特定的数据，如redis的键或用户ID，再根据节点数量N使用公式$hash(key)$%$N$计算出哈希值，用来决定数据映射到哪一个节点上。</p>
-<p>缺点：当节点数量变化时，如扩容或收缩节点，数据节点映射关系需要重新计算，会导致数据的重新迁移</p>
-<p>优点：简单，常用于数据库的分库分表规则，一般采用预分区的方式，提前根据数据量规划好分区数</p>
-<p>2、一致性哈希</p>
-<p>一致性哈希分区实现思路是为系统中每个节点分配一个token，范围一般在0～2^32^，这些token构成一个哈希环。数据读写执行节点查找操作时，现根据key计算哈希值，然后顺时针找到第一个大于等于该哈希值的token节点</p>
-<p>优点：这宗方式相比节点取余最大的好处在于加入和删除节点只影响哈希环中相邻的节点，对其它节点无影响</p>
-<p>缺点： </p>
-<ul>
-<li>加减节点会造成哈希环中部分数据无法命中，需要手动处理或者忽略这部分数据，因此一致性哈希常用于缓存场景</li>
-<li>当使用少量节点时，节点变化将大范围影响哈希环中的数据映射，因此这种方式不适合少量数据节点的分布式方案</li>
-<li>普通的一致性哈希分区在增减节点时需要增加一倍或减去一半节点才能保证数据和负载的均衡</li>
-</ul>
-<p>3、虚拟槽分区</p>
-<p> 虚拟槽分区使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，整数定义为槽。这个范围一般远大于节点数，比如redis Cluster槽范围为0～16383.槽时集群内数据管理和迁移的基本单位。采用大范围槽主要目的是问了方便数据拆分和集群扩展</p>
-<p>redis数据分区： </p>
-<p>redis cluster采用虚拟槽分区，所有的键根据哈希函数映射到0～16383整数槽内，计算公式：$slot=CRC(key)$&amp;$16383$。每一个节点负责维护一部分槽以及槽所映射的键值数据</p>
-<p>redis虚拟槽分区的特点：</p>
-<ul>
-<li>解耦数据和节点之间的关系，简化了节点扩容和收缩的难度</li>
-<li>节点自身维护槽的映射关系，不需要客户端或者代理服务维护槽分区元数据</li>
-<li>支持节点、槽、键之间的映射查询，用于数据路由、在线伸缩等场景 </li>
-</ul>
-<p>集群功能的一些限制：</p>
-<p>1、key批量操作支持有限，只支持具有相同slot值的key执行批量操作</p>
-<p>2、只支持同一个节点上的多个key的事物操作</p>
-<p>3、key作为数据分区的最小力度，因此不能将一个大的键值对象如hash、list等映射到不同的节点</p>
-<p>4、不支持多数据库空间，单机下redis可以支持16个数据库，集群模式下只能支持一个数据库空间，也就是db 0</p>
-<p>5、复制结构只能支持一层，从节点只能复制主节点，不支持嵌套梳妆复制结构</p>
-<h1 id="二、集群配置"><a href="#二、集群配置" class="headerlink" title="二、集群配置"></a>二、集群配置</h1><h2 id="1、节点握手"><a href="#1、节点握手" class="headerlink" title="1、节点握手"></a>1、节点握手</h2><p>节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程</p>
-<p>我们只需要在集群内任意节点上执行<code>cluster meet</code>命令加入新节点，握手状态会通过消息在集群内传播，这样其它节点会自动发现新节点并发起握手流程</p>
-<p>节点建立握手后集群还不能正常工作，这时集群处于下线状态，所有的数据读写都被禁止,可以通过<code>cluster info</code>命令获取集群的当前状态,因为目前所没有槽被分配到节点，因此集群无法完成槽到节点的映射。只有当16384个槽全部分配给节点之后，集群才进入到在线状态</p>
-<h2 id="2、节点握手"><a href="#2、节点握手" class="headerlink" title="2、节点握手"></a>2、节点握手</h2><p>redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当前节点分配了槽，才能响应和这些槽关联的键命令。通过<code>cluster addslots</code>命令可以为节点分配槽</p>
-<p>作为一个完整的集群，每个负责处理槽的节点应该具有从节点，保证当它出现故障时可以自动进行故障转移。集群模式下，redis节点角色分为主节点和从节点。首次启动的节点和被分配槽的节点都是主节点，从节点负责复制主节点槽信息和相关数据。适用<code>cluster replication [nodeId]</code>命令让一个节点成为从节点。其中命令执行必须在对应的节点上执行，nodeId时要复制主节点的节点ID</p>
-<h2 id="3、集群的完整性检查"><a href="#3、集群的完整性检查" class="headerlink" title="3、集群的完整性检查"></a>3、集群的完整性检查</h2><p>集群完整性是指所有的槽都分配到存活的主节点上，只要16384个槽中有一个没有分配给节点则表示集群不完整</p>
-<h1 id="三、节点通信"><a href="#三、节点通信" class="headerlink" title="三、节点通信"></a>三、节点通信</h1><p><strong>Gossip协议：</strong>Gossip协议的工作原理就是节点彼此不断通信交换信息，一段时间后所有的节点都会知道集群完整的信息</p>
-<h2 id="1、通信流程"><a href="#1、通信流程" class="headerlink" title="1、通信流程"></a>1、通信流程</h2><p>1）集群中的每个节点都会单独开辟一个TCP通道，用于节点之间彼此通信，通信端口号在基础端口上加10000</p>
-<p>2）每个节点在固定周期内通过特定规则选择几个节点发送ping消息</p>
-<p>3）收到ping消息的节点用pong消息作为响应</p>
-<h2 id="2、Gossip消息"><a href="#2、Gossip消息" class="headerlink" title="2、Gossip消息"></a>2、Gossip消息</h2><p>Gossip消息的主要职责就是信息交换。信息交换的载体就是节点彼此发送的Gossip消息，常用的Gossip消息可分为：ping消息、pong消息、meet消息、fail消息等</p>
-<p>1）meet消息：用于通知新节点加入集群</p>
-<p>2）ping消息：集群内交换最频繁的消息，集群内每个节点每秒向多个其它节点发送ping消息，用于检测节点是否在线和交换彼此状态信息</p>
-<p>3）pong消息：当收到ping、meet消息时，作为响应消息回复给发送方确认消息正常通信。pong消息封装了自身的状态数据。节点也可以向集群内广播自身的pong消息来通知整个集群对自身状态进行更新</p>
-<p>4）fail消息：当节点判定集群内另一节点下线时，会向集群内广播一个fail消息，其它节点接收到fail消息之后会把对应节点更新为下线状态</p>
-<p> 所有的消息格式划分为：消息头和消息题。消息头包含发送节点自身状态数据，接收节点根据消息头就可以获取到发送节点的相关数据</p>
-<p><strong>解析消息头过程：</strong></p>
-<p>消息头包含了发送节点的信息，如果发送节点时新节点且消息是meet类型，则加入到本地节点列表；如果是已知节点，则尝试更新发送节点的状态，如槽映射关系主从角色等状态</p>
-<p><strong>解析消息体过程：</strong></p>
-<p>如果消息体的clusterMsgDataGossip数组包含的节点是新节点，则尝试发起与新节点的meet握手流程；如果是已知节点，则根据clusterMsgDataGossip中的flags字段判断该节点是否下线，用于故障转移</p>
-<h1 id="四、请求路由"><a href="#四、请求路由" class="headerlink" title="四、请求路由"></a>四、请求路由</h1><h2 id="1、请求重定向"><a href="#1、请求重定向" class="headerlink" title="1、请求重定向"></a>1、请求重定向</h2><p>在集群模式下，redis接收任何键相关命令时首先计算键对应的槽，再根据槽找出所对应的节点，如果节点是自身，则处理键命令；否则回复MOVED重定向错误，通知客户端请求真确的节点。这个过程称为重定向</p>
-<p><strong>节点对于不属于它的键命令至回复重定向响应，并不负责转发</strong></p>
-<p>键命令执行的步骤主要分两步：计算槽，查找槽所对应的节点 </p>
-<p><strong>计算槽：</strong>redis首先需要计算键所对应的槽。根据键的有小部分（若有大括号，就是大括号包围的部分）使用CRC16函数计算出散列值，再取对16383的余数，使每个键都可以映射到0～16383的槽范围内，键内部使用大括号包含的内容叫做hash tag，它提供不同的键可以具备相同slot的功能</p>
-<p><strong>槽节点查找：</strong>Jedis的槽定向</p>
-<h1 id="五、ASK重定向"><a href="#五、ASK重定向" class="headerlink" title="五、ASK重定向"></a>五、ASK重定向</h1><p>ASK与MOVED虽然都是对客户端的重定向控制，但是有着本质的区别。ASK重定向说明集群正在进行slot数据迁移，客户端无法知道什么时候迁移完成，因此只能是临时性的重定向，客户端不会更新slots缓存。但是MOVED重定向说明键对应的槽已经明确指定到新的节点，因此需要更新slots缓存</p>
-<h1 id="六、故障转移"><a href="#六、故障转移" class="headerlink" title="六、故障转移"></a>六、故障转移</h1><p><strong>主观下线：</strong>指某个节点认为另一个节点不可用，即下线状态，这个状态并不是最终的故障判定，只能代表一个节点的意见，可能存在误判的情况</p>
-<p><strong>客观下线：</strong>指标记一个节点真正的下线，集群内多个节点都认为该节点不可用，从而达成共识的结果。如果是持有槽的主节点故障，需要为该节点进行故障转移</p>
-
-        
-      </div>
-      <p class="repo-list-meta">
-        <span class="meta-info">
-          <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.141Z" itemprop="datePublished">2019-01-13</time>
+           <time datetime="2019-01-13T11:21:38.541Z" itemprop="datePublished">2019-01-13</time>
         </span>
 
         
@@ -726,6 +744,10 @@ getradiusbymember key member longitude latitude radiusm|km|ft|mi [withcoord] [wi
     <div class="repo-list-item">
       <h3 class="repo-list-name" itemprop="name">
         
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之基础/">redis学习之基础.md</a>
+  
+
       </h3>
       <div class="repo-list-description">
         
@@ -1168,7 +1190,7 @@ restore key ttl value
       <p class="repo-list-meta">
         <span class="meta-info">
           <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.140Z" itemprop="datePublished">2019-01-13</time>
+           <time datetime="2019-01-13T11:20:35.086Z" itemprop="datePublished">2019-01-13</time>
         </span>
 
         
@@ -1185,6 +1207,10 @@ restore key ttl value
     <div class="repo-list-item">
       <h3 class="repo-list-name" itemprop="name">
         
+  
+      <a class="article-title" href="/2019/01/13/redis/redis学习之哨兵/">redis学习之哨兵.md</a>
+  
+
       </h3>
       <div class="repo-list-description">
         
@@ -1298,7 +1324,7 @@ restore key ttl value
       <p class="repo-list-meta">
         <span class="meta-info">
           <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.139Z" itemprop="datePublished">2019-01-13</time>
+           <time datetime="2019-01-13T11:20:05.800Z" itemprop="datePublished">2019-01-13</time>
         </span>
 
         
@@ -1311,103 +1337,79 @@ restore key ttl value
     </div>
   </article>
             
-                  <article id="post-redis/ redis学习之缓存设计" class="repo-list">
+                  <article id="post-redis/redis学习之集群" class="repo-list">
     <div class="repo-list-item">
       <h3 class="repo-list-name" itemprop="name">
         
       </h3>
       <div class="repo-list-description">
         
-          <h1 id="一、缓存的收益和成本"><a href="#一、缓存的收益和成本" class="headerlink" title="一、缓存的收益和成本"></a><strong>一</strong>、缓存的收益和成本</h1><h2 id="1、缓存的收益"><a href="#1、缓存的收益" class="headerlink" title="1、缓存的收益"></a>1、缓存的收益</h2><p>1）加速读写</p>
-<p>2、降低后端负载</p>
-<h2 id="2、成本"><a href="#2、成本" class="headerlink" title="2、成本"></a>2、成本</h2><p>1）数据不一致性</p>
-<p>2）代码维护成本</p>
-<p>3）运维成本</p>
-<h2 id="3、使用场景"><a href="#3、使用场景" class="headerlink" title="3、使用场景"></a>3、使用场景</h2><p>1）开销大的复杂计算</p>
-<p>2、加速请求响应：redis每秒可以完成几万次的读写，并且提供的批量操作可以优化整个IO链的响应时间</p>
-<h1 id="二、缓存更新策略"><a href="#二、缓存更新策略" class="headerlink" title="二、缓存更新策略"></a>二、缓存更新策略</h1><h2 id="1、LRU-LFU-FIFO算法剔除"><a href="#1、LRU-LFU-FIFO算法剔除" class="headerlink" title="1、LRU/LFU/FIFO算法剔除"></a>1、LRU/LFU/FIFO算法剔除</h2><p><strong>使用场景：</strong>通常用于缓存使用量超过了预设的最大值的时候</p>
-<p><strong>一致性：</strong>最差</p>
-<p><strong>维护成本：</strong>只需要配置maxmemory和对应的策略即可</p>
-<h2 id="2、超时剔除"><a href="#2、超时剔除" class="headerlink" title="2、超时剔除"></a>2、超时剔除</h2><p><strong>使用场景：</strong>如果业务可以容忍一段时间内，缓存层数据和存储层数据不一致，那么可以设置过期时间。在数据过期后，再从真实数据源获取数据，重新放到缓存病设置过期时间</p>
-<p><strong>一致性：</strong>一段时间窗口内存在一致性问题</p>
-<p><strong>维护成本：</strong>较低，只需要设置expire过期时间即可</p>
-<h2 id="3、主动更新"><a href="#3、主动更新" class="headerlink" title="3、主动更新"></a>3、主动更新</h2><p><strong>使用场景：</strong>应用方对于数据的一致性要求较高，需要在真实数据更新后，立即更新缓存数据</p>
-<p><strong>一致性：</strong>一致性最高，但如果主动更新发生了问题，那么这条数据很可能很长时间不会更新，所以建议结合超市剔除一起使用效果会更好</p>
-<p><strong>维护成本：</strong>维护成本比较高，开发需要自己来完成更新，病保证更新操作的正确性</p>
-<h2 id="4、最佳实践"><a href="#4、最佳实践" class="headerlink" title="4、最佳实践"></a>4、最佳实践</h2><ul>
-<li>低一致性业务建议配置最大内存和淘汰策略方式使用</li>
-<li>高一致性业务可以结合使用超时剔除和主动更新，这样即使更新出了问题，也能保证数据过期时间后删除脏数据</li>
-</ul>
-<h1 id="二、穿透优化"><a href="#二、穿透优化" class="headerlink" title="二、穿透优化"></a>二、穿透优化</h1><p>缓存穿透是指查询一个根本不存在的数据，缓存层和存储层都不会命中，通常处于容错的考虑，如果从存储层查不到数据则不写入缓存层</p>
-<p>造成缓存穿透的原因有两个</p>
+          <h1 id="一、数据分布"><a href="#一、数据分布" class="headerlink" title="一、数据分布"></a>一、数据分布</h1><p>分布式数据库首先要解决的是要把整个数据集按照分区规则映射到多个节点的问题，即把数据集划分到多个节点上，每个节点负责整体数据的一个子集。常见的分区规则有哈希分区和顺序分区两种。Redis采用的是哈希分区</p>
+<p>哈希分区一般分为以下几种：</p>
+<p>1、节点取余分区：</p>
+<p>使用特定的数据，如redis的键或用户ID，再根据节点数量N使用公式$hash(key)$%$N$计算出哈希值，用来决定数据映射到哪一个节点上。</p>
+<p>缺点：当节点数量变化时，如扩容或收缩节点，数据节点映射关系需要重新计算，会导致数据的重新迁移</p>
+<p>优点：简单，常用于数据库的分库分表规则，一般采用预分区的方式，提前根据数据量规划好分区数</p>
+<p>2、一致性哈希</p>
+<p>一致性哈希分区实现思路是为系统中每个节点分配一个token，范围一般在0～2^32^，这些token构成一个哈希环。数据读写执行节点查找操作时，现根据key计算哈希值，然后顺时针找到第一个大于等于该哈希值的token节点</p>
+<p>优点：这宗方式相比节点取余最大的好处在于加入和删除节点只影响哈希环中相邻的节点，对其它节点无影响</p>
+<p>缺点： </p>
 <ul>
-<li>自身业务代码或者数据出现问题</li>
-<li>一些恶意攻击、爬虫等造成大量空命中</li>
+<li>加减节点会造成哈希环中部分数据无法命中，需要手动处理或者忽略这部分数据，因此一致性哈希常用于缓存场景</li>
+<li>当使用少量节点时，节点变化将大范围影响哈希环中的数据映射，因此这种方式不适合少量数据节点的分布式方案</li>
+<li>普通的一致性哈希分区在增减节点时需要增加一倍或减去一半节点才能保证数据和负载的均衡</li>
 </ul>
-<p>解决缓存穿透问题的几个方案：</p>
-<p><strong>1、缓存空对象：</strong>如果存储层不命中，则仍然将空对象保留到缓存层中，之后再访问这个数据将会从缓存中获取，这样就保护了后端数据源</p>
-<p>缓存空对象会有连个问题：</p>
+<p>3、虚拟槽分区</p>
+<p> 虚拟槽分区使用分散度良好的哈希函数把所有数据映射到一个固定范围的整数集合中，整数定义为槽。这个范围一般远大于节点数，比如redis Cluster槽范围为0～16383.槽时集群内数据管理和迁移的基本单位。采用大范围槽主要目的是问了方便数据拆分和集群扩展</p>
+<p>redis数据分区： </p>
+<p>redis cluster采用虚拟槽分区，所有的键根据哈希函数映射到0～16383整数槽内，计算公式：$slot=CRC(key)$&amp;$16383$。每一个节点负责维护一部分槽以及槽所映射的键值数据</p>
+<p>redis虚拟槽分区的特点：</p>
 <ul>
-<li>空值做了缓存，意味着缓存层中存了更多的键，需要更多的内存空间（如果是攻击，问题更严重），比较有效的方法是针对这类数据设置一个较短的过期时间，让其自动剔除</li>
-<li>缓存层和存储层的数据会有一段时间窗口不一致，可能会对业务有一定的影响</li>
+<li>解耦数据和节点之间的关系，简化了节点扩容和收缩的难度</li>
+<li>节点自身维护槽的映射关系，不需要客户端或者代理服务维护槽分区元数据</li>
+<li>支持节点、槽、键之间的映射查询，用于数据路由、在线伸缩等场景 </li>
 </ul>
-<p><strong>2、布隆过滤器拦截：</strong>在访问缓存层和存储层之前，讲存在的key用布隆过滤器提前保存起来，做一层拦截，redis可以利用Bitmaps实现布隆过滤器</p>
-<p>这种方式适用于数据命中不高，数据相对固定，实时性较低的应用场景，代码维护较为复杂，但是缓存空间占用小</p>
-<h1 id="三、无底洞优化"><a href="#三、无底洞优化" class="headerlink" title="三、无底洞优化"></a>三、无底洞优化</h1><p>所谓无底洞，就是说投入的越多不一定产出越多</p>
-<h2 id="1、常见的IO优化思路"><a href="#1、常见的IO优化思路" class="headerlink" title="1、常见的IO优化思路"></a>1、常见的IO优化思路</h2><ul>
-<li>命令本身的优化，例如优化SQL语句</li>
-<li>减少网络通信次数</li>
-<li>降低接入成本，例如客户端使用长连接/连接池、NIO等</li>
-</ul>
-<p><strong>几种批量操作解决方案对比</strong></p>
-<table>
-<thead>
-<tr>
-<th>方案</th>
-<th>优点</th>
-<th>缺点</th>
-<th>网络IO</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>串行命令</td>
-<td>1）编程简单<br>2)如果少量 keys，性能可以满徐需求</td>
-<td>大量keys请求延迟严重</td>
-<td><em>O</em>(keys)</td>
-</tr>
-<tr>
-<td>串行IO</td>
-<td>1）编程简单<br>2）少量节点，性能满足需求</td>
-<td>大量node延迟严重</td>
-<td><em>O</em>(nodes)</td>
-</tr>
-<tr>
-<td>并行IO</td>
-<td>利用并行特性，延迟取决于最慢的节点</td>
-<td>1）编程复杂<br>2）由于多线程，问题定位可能较难</td>
-<td><em>O</em>(max_slow(nodes))</td>
-</tr>
-<tr>
-<td>hash_tag</td>
-<td>性能最高</td>
-<td>1）业务维护成本较高<br>2）容易出现数据倾斜</td>
-<td><em>O</em>(1)</td>
-</tr>
-</tbody>
-</table>
-<h1 id="四、雪崩优化"><a href="#四、雪崩优化" class="headerlink" title="四、雪崩优化"></a>四、雪崩优化</h1><p>由于缓存层承载着大量请求，有效地保护了存储层，但是如果缓存层由于某些原因不能提供服务，于是所有的请求都会达到存储层，存储层的调用量会暴增，造成存储层也会级联当即的情况</p>
-<p>预防和解决缓存雪崩的问题，可以从以下几方面着手：</p>
-<p>1、保证缓存层服务的高可用性</p>
-<p>2、依赖隔离组件为后端限流并降级</p>
-<p>3、提前演练</p>
+<p>集群功能的一些限制：</p>
+<p>1、key批量操作支持有限，只支持具有相同slot值的key执行批量操作</p>
+<p>2、只支持同一个节点上的多个key的事物操作</p>
+<p>3、key作为数据分区的最小力度，因此不能将一个大的键值对象如hash、list等映射到不同的节点</p>
+<p>4、不支持多数据库空间，单机下redis可以支持16个数据库，集群模式下只能支持一个数据库空间，也就是db 0</p>
+<p>5、复制结构只能支持一层，从节点只能复制主节点，不支持嵌套梳妆复制结构</p>
+<h1 id="二、集群配置"><a href="#二、集群配置" class="headerlink" title="二、集群配置"></a>二、集群配置</h1><h2 id="1、节点握手"><a href="#1、节点握手" class="headerlink" title="1、节点握手"></a>1、节点握手</h2><p>节点握手是指一批运行在集群模式下的节点通过Gossip协议彼此通信，达到感知对方的过程</p>
+<p>我们只需要在集群内任意节点上执行<code>cluster meet</code>命令加入新节点，握手状态会通过消息在集群内传播，这样其它节点会自动发现新节点并发起握手流程</p>
+<p>节点建立握手后集群还不能正常工作，这时集群处于下线状态，所有的数据读写都被禁止,可以通过<code>cluster info</code>命令获取集群的当前状态,因为目前所没有槽被分配到节点，因此集群无法完成槽到节点的映射。只有当16384个槽全部分配给节点之后，集群才进入到在线状态</p>
+<h2 id="2、节点握手"><a href="#2、节点握手" class="headerlink" title="2、节点握手"></a>2、节点握手</h2><p>redis集群把所有的数据映射到16384个槽中。每个key会映射为一个固定的槽，只有当前节点分配了槽，才能响应和这些槽关联的键命令。通过<code>cluster addslots</code>命令可以为节点分配槽</p>
+<p>作为一个完整的集群，每个负责处理槽的节点应该具有从节点，保证当它出现故障时可以自动进行故障转移。集群模式下，redis节点角色分为主节点和从节点。首次启动的节点和被分配槽的节点都是主节点，从节点负责复制主节点槽信息和相关数据。适用<code>cluster replication [nodeId]</code>命令让一个节点成为从节点。其中命令执行必须在对应的节点上执行，nodeId时要复制主节点的节点ID</p>
+<h2 id="3、集群的完整性检查"><a href="#3、集群的完整性检查" class="headerlink" title="3、集群的完整性检查"></a>3、集群的完整性检查</h2><p>集群完整性是指所有的槽都分配到存活的主节点上，只要16384个槽中有一个没有分配给节点则表示集群不完整</p>
+<h1 id="三、节点通信"><a href="#三、节点通信" class="headerlink" title="三、节点通信"></a>三、节点通信</h1><p><strong>Gossip协议：</strong>Gossip协议的工作原理就是节点彼此不断通信交换信息，一段时间后所有的节点都会知道集群完整的信息</p>
+<h2 id="1、通信流程"><a href="#1、通信流程" class="headerlink" title="1、通信流程"></a>1、通信流程</h2><p>1）集群中的每个节点都会单独开辟一个TCP通道，用于节点之间彼此通信，通信端口号在基础端口上加10000</p>
+<p>2）每个节点在固定周期内通过特定规则选择几个节点发送ping消息</p>
+<p>3）收到ping消息的节点用pong消息作为响应</p>
+<h2 id="2、Gossip消息"><a href="#2、Gossip消息" class="headerlink" title="2、Gossip消息"></a>2、Gossip消息</h2><p>Gossip消息的主要职责就是信息交换。信息交换的载体就是节点彼此发送的Gossip消息，常用的Gossip消息可分为：ping消息、pong消息、meet消息、fail消息等</p>
+<p>1）meet消息：用于通知新节点加入集群</p>
+<p>2）ping消息：集群内交换最频繁的消息，集群内每个节点每秒向多个其它节点发送ping消息，用于检测节点是否在线和交换彼此状态信息</p>
+<p>3）pong消息：当收到ping、meet消息时，作为响应消息回复给发送方确认消息正常通信。pong消息封装了自身的状态数据。节点也可以向集群内广播自身的pong消息来通知整个集群对自身状态进行更新</p>
+<p>4）fail消息：当节点判定集群内另一节点下线时，会向集群内广播一个fail消息，其它节点接收到fail消息之后会把对应节点更新为下线状态</p>
+<p> 所有的消息格式划分为：消息头和消息题。消息头包含发送节点自身状态数据，接收节点根据消息头就可以获取到发送节点的相关数据</p>
+<p><strong>解析消息头过程：</strong></p>
+<p>消息头包含了发送节点的信息，如果发送节点时新节点且消息是meet类型，则加入到本地节点列表；如果是已知节点，则尝试更新发送节点的状态，如槽映射关系主从角色等状态</p>
+<p><strong>解析消息体过程：</strong></p>
+<p>如果消息体的clusterMsgDataGossip数组包含的节点是新节点，则尝试发起与新节点的meet握手流程；如果是已知节点，则根据clusterMsgDataGossip中的flags字段判断该节点是否下线，用于故障转移</p>
+<h1 id="四、请求路由"><a href="#四、请求路由" class="headerlink" title="四、请求路由"></a>四、请求路由</h1><h2 id="1、请求重定向"><a href="#1、请求重定向" class="headerlink" title="1、请求重定向"></a>1、请求重定向</h2><p>在集群模式下，redis接收任何键相关命令时首先计算键对应的槽，再根据槽找出所对应的节点，如果节点是自身，则处理键命令；否则回复MOVED重定向错误，通知客户端请求真确的节点。这个过程称为重定向</p>
+<p><strong>节点对于不属于它的键命令至回复重定向响应，并不负责转发</strong></p>
+<p>键命令执行的步骤主要分两步：计算槽，查找槽所对应的节点 </p>
+<p><strong>计算槽：</strong>redis首先需要计算键所对应的槽。根据键的有小部分（若有大括号，就是大括号包围的部分）使用CRC16函数计算出散列值，再取对16383的余数，使每个键都可以映射到0～16383的槽范围内，键内部使用大括号包含的内容叫做hash tag，它提供不同的键可以具备相同slot的功能</p>
+<p><strong>槽节点查找：</strong>Jedis的槽定向</p>
+<h1 id="五、ASK重定向"><a href="#五、ASK重定向" class="headerlink" title="五、ASK重定向"></a>五、ASK重定向</h1><p>ASK与MOVED虽然都是对客户端的重定向控制，但是有着本质的区别。ASK重定向说明集群正在进行slot数据迁移，客户端无法知道什么时候迁移完成，因此只能是临时性的重定向，客户端不会更新slots缓存。但是MOVED重定向说明键对应的槽已经明确指定到新的节点，因此需要更新slots缓存</p>
+<h1 id="六、故障转移"><a href="#六、故障转移" class="headerlink" title="六、故障转移"></a>六、故障转移</h1><p><strong>主观下线：</strong>指某个节点认为另一个节点不可用，即下线状态，这个状态并不是最终的故障判定，只能代表一个节点的意见，可能存在误判的情况</p>
+<p><strong>客观下线：</strong>指标记一个节点真正的下线，集群内多个节点都认为该节点不可用，从而达成共识的结果。如果是持有槽的主节点故障，需要为该节点进行故障转移</p>
 
         
       </div>
       <p class="repo-list-meta">
         <span class="meta-info">
           <span class="octicon octicon-calendar"></span>
-           <time datetime="2019-01-13T11:02:13.138Z" itemprop="datePublished">2019-01-13</time>
+           <time datetime="2019-01-13T11:02:13.141Z" itemprop="datePublished">2019-01-13</time>
         </span>
 
         
@@ -1641,7 +1643,7 @@ restore key ttl value
             
                   
                   <li>
-                    <a href="/categories/" title="分类">分类</a>
+                    <a href="/category/" target="true" title="分类">分类</a>
                   </li>
             
                   
